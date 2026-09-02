@@ -1,0 +1,11 @@
+[
+  {
+    "id": "exch-1",
+    "senderId": "usr-user1",
+    "receiverId": "usr-user2",
+    "offeredBookId": "bk-1",
+    "requestedBookId": "bk-2",
+    "status": "PENDING",
+    "createdAt": "2026-08-25T16:17:01.812Z"
+  }
+]

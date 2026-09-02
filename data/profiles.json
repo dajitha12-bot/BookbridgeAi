@@ -1,0 +1,119 @@
+[
+  {
+    "userId": "usr-admin",
+    "city": "Chennai",
+    "area": "Nungambakkam",
+    "address": "12, College Road",
+    "pincode": "600006",
+    "latitude": 13.0612,
+    "longitude": 80.2514
+  },
+  {
+    "userId": "usr-staff1",
+    "city": "Chennai",
+    "area": "Guindy",
+    "address": "45, Mount Road",
+    "pincode": "600032",
+    "latitude": 13.0067,
+    "longitude": 80.2206
+  },
+  {
+    "userId": "usr-staff2",
+    "city": "Madurai",
+    "area": "Anna Nagar",
+    "address": "8, Sathamangalam",
+    "pincode": "625020",
+    "latitude": 9.9252,
+    "longitude": 78.1198
+  },
+  {
+    "userId": "usr-staff3",
+    "city": "Coimbatore",
+    "area": "Gandhipuram",
+    "address": "102, Cross Cut Road",
+    "pincode": "641012",
+    "latitude": 11.0168,
+    "longitude": 76.9558
+  },
+  {
+    "userId": "usr-user1",
+    "city": "Chennai",
+    "area": "Adyar",
+    "address": "10, Kasturiba Nagar",
+    "pincode": "600020",
+    "latitude": 13.0067,
+    "longitude": 80.2572
+  },
+  {
+    "userId": "usr-user2",
+    "city": "Chennai",
+    "area": "Mylapore",
+    "address": "14, Luz Church Road",
+    "pincode": "600004",
+    "latitude": 13.0333,
+    "longitude": 80.2667
+  },
+  {
+    "userId": "usr-user3",
+    "city": "Chennai",
+    "area": "Velachery",
+    "address": "8, Bypass Road",
+    "pincode": "600042",
+    "latitude": 12.9815,
+    "longitude": 80.2185
+  },
+  {
+    "userId": "usr-user4",
+    "city": "Madurai",
+    "area": "KK Nagar",
+    "address": "22, Lake View Road",
+    "pincode": "625020",
+    "latitude": 9.9322,
+    "longitude": 78.1485
+  },
+  {
+    "userId": "usr-user5",
+    "city": "Coimbatore",
+    "area": "Peelamedu",
+    "address": "55, Avinashi Road",
+    "pincode": "641004",
+    "latitude": 11.0264,
+    "longitude": 77.0185
+  },
+  {
+    "userId": "usr-user6",
+    "city": "Tiruchirappalli",
+    "area": "Cantonment",
+    "address": "15, Royal Road",
+    "pincode": "620001",
+    "latitude": 10.7905,
+    "longitude": 78.7047
+  },
+  {
+    "userId": "usr-user7",
+    "city": "Tirunelveli",
+    "area": "Palayamkottai",
+    "address": "3, High Ground Road",
+    "pincode": "627002",
+    "latitude": 8.7139,
+    "longitude": 77.7567
+  },
+  {
+    "city": "Chennai",
+    "area": "Anna nagar",
+    "address": "44,North street",
+    "pincode": "60021",
+    "latitude": 13.0827,
+    "longitude": 80.2707,
+    "userId": "dfhw217lp"
+  },
+  {
+    "city": "Madurai",
+    "area": "Anna nagar",
+    "address": "44, SBK Elementary school road,",
+    "pincode": "626101",
+    "latitude": 9.9252,
+    "longitude": 78.1198,
+    "userId": "nlkcoogee"
+  }
+]

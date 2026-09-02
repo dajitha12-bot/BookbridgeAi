@@ -1,0 +1,35 @@
+[
+  {
+    "userId": "usr-staff1",
+    "name": "Dhinesh Kumar",
+    "phone": "9876543210",
+    "city": "Chennai",
+    "area": "Guindy",
+    "pincode": "600032",
+    "serviceArea": "Adyar, Mylapore, Velachery, Guindy",
+    "availability": true,
+    "activeDeliveries": 1
+  },
+  {
+    "userId": "usr-staff2",
+    "name": "Karthik Raja",
+    "phone": "9876543211",
+    "city": "Madurai",
+    "area": "Anna Nagar",
+    "pincode": "625020",
+    "serviceArea": "KK Nagar, Anna Nagar, Madurai",
+    "availability": true,
+    "activeDeliveries": 0
+  },
+  {
+    "userId": "usr-staff3",
+    "name": "Suresh Kumar",
+    "phone": "9876543212",
+    "city": "Coimbatore",
+    "area": "Gandhipuram",
+    "pincode": "641012",
+    "serviceArea": "Gandhipuram, Peelamedu, Coimbatore",
+    "availability": true,
+    "activeDeliveries": 0
+  }
+]

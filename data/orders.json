@@ -1,0 +1,49 @@
+[
+  {
+    "id": "ord-1",
+    "bookId": "bk-3",
+    "buyerId": "usr-user2",
+    "sellerId": "usr-user3",
+    "amount": 1200,
+    "deliveryMethod": "DELIVERY",
+    "paymentStatus": "PAID",
+    "orderStatus": "IN_TRANSIT",
+    "createdAt": "2026-08-25T16:17:01.812Z"
+  },
+  {
+    "id": "ord-2",
+    "bookId": "bk-8",
+    "buyerId": "usr-user3",
+    "sellerId": "usr-user1",
+    "amount": 0,
+    "deliveryMethod": "PICKUP",
+    "paymentStatus": "COD",
+    "orderStatus": "READY_FOR_PICKUP",
+    "pickupLocation": "Anna Nagar West Bus Stand",
+    "createdAt": "2026-08-25T16:17:01.812Z"
+  },
+  {
+    "buyerId": "dfhw217lp",
+    "sellerId": "usr-user4",
+    "bookId": "bk-31",
+    "amount": 190,
+    "deliveryMethod": "DELIVERY",
+    "paymentStatus": "COD",
+    "orderStatus": "PENDING",
+    "pickupLocation": "Book Rental contract: 14 days",
+    "id": "umpz4s0et",
+    "createdAt": "2026-08-28T02:04:15.522Z"
+  },
+  {
+    "buyerId": "nlkcoogee",
+    "sellerId": "usr-user5",
+    "bookId": "bk-32",
+    "amount": 120,
+    "deliveryMethod": "DELIVERY",
+    "paymentStatus": "COD",
+    "orderStatus": "PENDING",
+    "pickupLocation": "Book Rental contract: 7 days",
+    "id": "7aptfvn16",
+    "createdAt": "2026-09-02T04:06:37.508Z"
+  }
+]

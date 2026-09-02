@@ -1,36 +1,105 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# BookBridge AI – Smart Book Exchange & Delivery Platform
 
-## Getting Started
+**Tagline**: Buy. Sell. Exchange. Deliver.
 
-First, run the development server:
+BookBridge AI is a professional, city-wide book sharing, buy/sell, donation, and logistics platform designed for readers to exchange literature and engineering textbooks locally. It combines Next.js App Router, SQLite, Prisma ORM, and Tailwind CSS with a local multivariable linear regression AI for fair price estimation.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+---
+
+## Approximate Project Composition
+- **Full-Stack & Business Logic**: 80–85%
+- **Embedded AI/ML (Fair Price Suggestion)**: 15–20%
+
+---
+
+## 1. Core Platform Features
+- **Buy Used Books**: Purchase pre-owned textbooks or novels listed in your neighborhood.
+- **Sell Used Books**: List old books and get instant pricing suggestions from our AI model.
+- **Direct Book Exchange**: Propose direct swaps between two users.
+- **SwapChain Exchange**: Graph cycle DFS detection finds multi-user exchange loops (e.g. A -> B -> C -> A) when direct swaps are unavailable.
+- **Donate Books**: Mark books as free donations.
+- **Book Requests**: Request unavailable titles and get notified when someone lists them in your city.
+- **Geographic Distance**: Sort listings by nearest distance calculated using the Haversine formula on registered addresses.
+- **Logistics Choices**: Choose between Home Delivery or Offline Pickups.
+- **Payment Abstraction**: Supports Cash on Delivery (COD) or simulated online credit card authorization.
+- **Logistics Workloads**: Matches orders to available delivery staff using weighted logistics rules.
+- **Reviews & Ratings**: Evaluate book conditions, seller reliability, and delivery staff performance.
+
+---
+
+## 2. Three Dashboards
+1. **User Dashboard**: Acts as both Buyer, Seller, Exchanger, and Donor. Features statistics counters, active order logs, nearby listing maps, book request boards, and SwapChain proposes.
+2. **Delivery Staff Dashboard**: Access assigned delivery routes, update shipment milestones, and view history.
+3. **Admin Dashboard**: System diagnostics, user blocks/unblocks, logs verification, unassigned order logs, and weighted staff recommendations.
+
+---
+
+## 3. Technology Stack
+- **Frontend**: Next.js, React.js (App Router), TypeScript, Tailwind CSS, Lucide React Icons.
+- **Backend**: Next.js Server Actions, Next.js API Routes, TypeScript.
+- **Database**: SQLite + Prisma ORM.
+- **Authentication**: Email/Password authentication, secure cookies, PBKDF2 hashing, and role authorization.
+- **AI/ML**: Custom Embedded Multivariable Linear Regression with Gradient Descent.
+
+---
+
+## 4. Database Setup & Schema
+Prisma models configured in SQLite:
+- `User` & `Profile`: Authentication and geolocation coordinates.
+- `Book` & `Category`: Listings and genres.
+- `Wishlist` & `BookRequest`: Saved titles and buy requests.
+- `Order` & `Payment`: Transaction logs.
+- `Exchange` & `SwapChain`: Direct and loop trades.
+- `DeliveryStaff` & `Delivery`: Shipments and staff.
+- `Review` & `Notification`: User feedback and alerts.
+
+---
+
+## 5. Non-AI Smart Algorithms
+- **Smart Book Recommendations**: Database-backed matching category interests.
+- **Nearby Seller Ranking**: Mathematical Haversine distance formula.
+- **SwapChain cycle finder**: DFS graph cycle analysis.
+- **Delivery Staff Assignment**: Weighted matching rules.
+
+---
+
+## 6. Installation & Execution
+
+### 6.1 Prerequisites
+- Node.js (v18 or higher)
+- npm (v10 or higher)
+
+### 6.2 Environment Configuration
+Create a `.env` file at the project root based on `.env.example`:
+```env
+DATABASE_URL="file:./dev.db"
+SESSION_SECRET="your-32-byte-hex-string-for-cookie-encryption"
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 6.3 Prisma Setup & Seeding
+Install dependencies and run database synchronization:
+```bash
+# Install npm dependencies
+npm install
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+# Sync Prisma Schema and generate Client
+npx prisma db push
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+# Seed the database with sample users and books
+npx prisma db seed
+```
 
-## Learn More
+### 6.4 Running the Application
+Start the Next.js development server:
+```bash
+npm run dev
+```
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 7. Future Enhancements
+- Replace the local TypeScript regression pricing model with a TensorFlow.js regression model or custom neural network.
+- Integrate real-time GPS tracking for delivery staff.
+- Expand payment methods to include UPI and Stripe gateway webhooks.
+- Support book cover image uploads directly to Cloudinary or AWS S3.

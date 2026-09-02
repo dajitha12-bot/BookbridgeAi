@@ -1,0 +1,36 @@
+[
+  {
+    "id": "pay-1",
+    "orderId": "ord-1",
+    "amount": 1200,
+    "method": "ONLINE",
+    "status": "PAID",
+    "transactionId": "TXN-998877",
+    "createdAt": "2026-08-25T16:17:01.812Z"
+  },
+  {
+    "id": "pay-2",
+    "orderId": "ord-2",
+    "amount": 0,
+    "method": "COD",
+    "status": "COD",
+    "transactionId": null,
+    "createdAt": "2026-08-25T16:17:01.812Z"
+  },
+  {
+    "orderId": "umpz4s0et",
+    "amount": 190,
+    "method": "COD",
+    "status": "COD",
+    "id": "emlpa1qtz",
+    "createdAt": "2026-08-28T02:04:15.525Z"
+  },
+  {
+    "orderId": "7aptfvn16",
+    "amount": 120,
+    "method": "COD",
+    "status": "COD",
+    "id": "kk2kp73f4",
+    "createdAt": "2026-09-02T04:06:37.516Z"
+  }
+]

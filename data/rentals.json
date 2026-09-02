@@ -1,0 +1,38 @@
+[
+  {
+    "id": "rent_demo_1",
+    "bookId": "book_1",
+    "renterId": "usr_ajitha",
+    "ownerId": "usr_rahul",
+    "durationDays": 14,
+    "rentalFee": 190,
+    "paymentStatus": "PAID",
+    "status": "ACTIVE",
+    "startDate": "2026-08-24T12:00:00Z",
+    "endDate": "2026-09-07T12:00:00Z"
+  },
+  {
+    "bookId": "bk-31",
+    "renterId": "dfhw217lp",
+    "ownerId": "usr-user4",
+    "durationDays": 14,
+    "rentalFee": 190,
+    "paymentStatus": "COD",
+    "id": "rent_2yiz3ot4v",
+    "status": "ACTIVE",
+    "startDate": "2026-08-28T02:04:15.518Z",
+    "endDate": "2026-09-11T02:04:15.518Z"
+  },
+  {
+    "bookId": "bk-32",
+    "renterId": "nlkcoogee",
+    "ownerId": "usr-user5",
+    "durationDays": 7,
+    "rentalFee": 120,
+    "paymentStatus": "COD",
+    "id": "rent_7h1e1mmle",
+    "status": "ACTIVE",
+    "startDate": "2026-09-02T04:06:37.500Z",
+    "endDate": "2026-09-09T04:06:37.500Z"
+  }
+]
