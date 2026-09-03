@@ -37,13 +37,11 @@ function LoginFormContent() {
       const res = await loginAction(null, formData);
 
       if (res && res.token) {
-        // Set document cookie directly on client to guarantee Vercel HTTP request header presence
         document.cookie = `session_token=${res.token}; path=/; max-age=604800; SameSite=Lax;`;
       }
     } catch (err: any) {
       console.error('Login action:', err);
     } finally {
-      // Perform immediate location navigation to target workspace
       window.location.href = targetUrl;
     }
   };
@@ -82,8 +80,16 @@ function LoginFormContent() {
         {targetRole === 'user' && (
           <p className="text-xs text-slate-500">
             Or{' '}
-            <Link href="/register" className="font-semibold text-blue-500 hover:text-blue-600">
+            <Link href="/register?role=user" className="font-semibold text-blue-500 hover:text-blue-600">
               create a new account for free
+            </Link>
+          </p>
+        )}
+        {targetRole === 'staff' && (
+          <p className="text-xs text-slate-500">
+            Don't have a partner account?{' '}
+            <Link href="/register?role=staff" className="font-bold text-emerald-600 hover:text-emerald-700 underline">
+              Register as Delivery Staff Partner
             </Link>
           </p>
         )}
@@ -91,7 +97,6 @@ function LoginFormContent() {
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-4 border border-slate-100 shadow-md sm:rounded-xl sm:px-10 space-y-6">
-          {/* Error Message */}
           {error && (
             <div className="bg-rose-50 border border-rose-100 p-3 rounded-lg flex items-start space-x-2.5 text-rose-600 text-xs font-semibold animate-shake">
               <AlertCircle className="w-4 h-4 text-rose-500 flex-shrink-0 mt-0.5" />
@@ -100,10 +105,8 @@ function LoginFormContent() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Hidden role identifier */}
             <input type="hidden" name="role" value={targetRole.toUpperCase()} />
 
-            {/* Email */}
             <div className="space-y-1.5">
               <label htmlFor="email" className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
                 Email Address
@@ -123,7 +126,6 @@ function LoginFormContent() {
               </div>
             </div>
 
-            {/* Password */}
             <div className="space-y-1.5">
               <div className="flex justify-between items-center">
                 <label htmlFor="password" className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
@@ -148,7 +150,6 @@ function LoginFormContent() {
               </div>
             </div>
 
-            {/* Submit Button */}
             <button
               type="submit"
               disabled={isPending}
@@ -167,7 +168,7 @@ function LoginFormContent() {
                 <button
                   type="button"
                   onClick={() => handleQuickDemoLogin('admin@bookbridge.com')}
-                  className="text-left px-3 py-2 bg-white border border-blue-200 hover:bg-blue-50 rounded-lg text-slate-700 font-semibold transition-colors flex justify-between items-center"
+                  className="text-left px-3 py-2 bg-white border border-blue-200 hover:bg-blue-50 rounded-lg text-slate-700 font-semibold transition-colors flex justify-between items-center cursor-pointer"
                 >
                   <span><strong>Admin:</strong> admin@bookbridge.com</span>
                   {email === 'admin@bookbridge.com' && <Check className="w-3.5 h-3.5 text-blue-600" />}
@@ -178,18 +179,18 @@ function LoginFormContent() {
                   <button
                     type="button"
                     onClick={() => handleQuickDemoLogin('dhinesh@delivery.com')}
-                    className="text-left px-3 py-2 bg-white border border-blue-200 hover:bg-blue-50 rounded-lg text-slate-700 font-semibold transition-colors flex justify-between items-center"
+                    className="text-left px-3 py-2 bg-white border border-blue-200 hover:bg-blue-50 rounded-lg text-slate-700 font-semibold transition-colors flex justify-between items-center cursor-pointer"
                   >
                     <span><strong>Staff 1 (Chennai):</strong> dhinesh@delivery.com</span>
                     {email === 'dhinesh@delivery.com' && <Check className="w-3.5 h-3.5 text-blue-600" />}
                   </button>
                   <button
                     type="button"
-                    onClick={() => handleQuickDemoLogin('karthik@delivery.com')}
-                    className="text-left px-3 py-2 bg-white border border-blue-200 hover:bg-blue-50 rounded-lg text-slate-700 font-semibold transition-colors flex justify-between items-center"
+                    onClick={() => handleQuickDemoLogin('staff@bookbridge.com')}
+                    className="text-left px-3 py-2 bg-white border border-blue-200 hover:bg-blue-50 rounded-lg text-slate-700 font-semibold transition-colors flex justify-between items-center cursor-pointer"
                   >
-                    <span><strong>Staff 2 (Madurai):</strong> karthik@delivery.com</span>
-                    {email === 'karthik@delivery.com' && <Check className="w-3.5 h-3.5 text-blue-600" />}
+                    <span><strong>Staff 2 (Demo):</strong> staff@bookbridge.com</span>
+                    {email === 'staff@bookbridge.com' && <Check className="w-3.5 h-3.5 text-blue-600" />}
                   </button>
                 </>
               )}
@@ -198,18 +199,18 @@ function LoginFormContent() {
                   <button
                     type="button"
                     onClick={() => handleQuickDemoLogin('ajitha@gmail.com')}
-                    className="text-left px-3 py-2 bg-white border border-blue-200 hover:bg-blue-50 rounded-lg text-slate-700 font-semibold transition-colors flex justify-between items-center"
+                    className="text-left px-3 py-2 bg-white border border-blue-200 hover:bg-blue-50 rounded-lg text-slate-700 font-semibold transition-colors flex justify-between items-center cursor-pointer"
                   >
                     <span><strong>User 1 (Ajitha):</strong> ajitha@gmail.com</span>
                     {email === 'ajitha@gmail.com' && <Check className="w-3.5 h-3.5 text-blue-600" />}
                   </button>
                   <button
                     type="button"
-                    onClick={() => handleQuickDemoLogin('rahul@gmail.com')}
-                    className="text-left px-3 py-2 bg-white border border-blue-200 hover:bg-blue-50 rounded-lg text-slate-700 font-semibold transition-colors flex justify-between items-center"
+                    onClick={() => handleQuickDemoLogin('user@bookbridge.com')}
+                    className="text-left px-3 py-2 bg-white border border-blue-200 hover:bg-blue-50 rounded-lg text-slate-700 font-semibold transition-colors flex justify-between items-center cursor-pointer"
                   >
-                    <span><strong>User 2 (Rahul):</strong> rahul@gmail.com</span>
-                    {email === 'rahul@gmail.com' && <Check className="w-3.5 h-3.5 text-blue-600" />}
+                    <span><strong>User 2 (Demo):</strong> user@bookbridge.com</span>
+                    {email === 'user@bookbridge.com' && <Check className="w-3.5 h-3.5 text-blue-600" />}
                   </button>
                 </>
               )}

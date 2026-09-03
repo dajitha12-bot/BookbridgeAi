@@ -1,11 +1,16 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { registerAction } from '../../actions/authActions';
-import { Lock, Mail, User, Phone, MapPin, AlertCircle, ArrowRight } from 'lucide-react';
+import { Lock, Mail, User, Phone, MapPin, AlertCircle, ArrowRight, Truck } from 'lucide-react';
 
-export default function RegisterPage() {
+function RegisterFormContent() {
+  const searchParams = useSearchParams();
+  const initialRole = searchParams.get('role') === 'staff' ? 'DELIVERY_STAFF' : 'USER';
+
+  const [role, setRole] = useState(initialRole);
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -19,7 +24,7 @@ export default function RegisterPage() {
       const res = await registerAction(null, formData);
 
       if (res.success) {
-        const targetUrl = res.redirectUrl || '/dashboard';
+        const targetUrl = res.redirectUrl || (role === 'DELIVERY_STAFF' ? '/staff' : '/dashboard');
         window.location.href = targetUrl;
       } else {
         setError(res.error || 'Registration failed.');
@@ -38,10 +43,12 @@ export default function RegisterPage() {
           <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center font-extrabold text-white text-xl">B</div>
           <span className="font-extrabold text-slate-800 text-2xl tracking-tight">BookBridge AI</span>
         </Link>
-        <h2 className="text-2xl font-extrabold text-slate-900">Create your account</h2>
+        <h2 className="text-2xl font-extrabold text-slate-900">
+          {role === 'DELIVERY_STAFF' ? 'Register Delivery Staff Partner' : 'Create your account'}
+        </h2>
         <p className="text-xs text-slate-500">
           Already have an account?{' '}
-          <Link href="/login" className="font-semibold text-blue-500 hover:text-blue-600">
+          <Link href={role === 'DELIVERY_STAFF' ? '/login?role=staff' : '/login'} className="font-semibold text-blue-500 hover:text-blue-600">
             Sign in instead
           </Link>
         </p>
@@ -189,7 +196,9 @@ export default function RegisterPage() {
                   id="role"
                   name="role"
                   required
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 bg-white"
+                  value={role}
+                  onChange={(e) => setRole(e.target.value)}
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 bg-white font-semibold text-blue-600"
                 >
                   <option value="USER">Reader / Seller / Buyer</option>
                   <option value="DELIVERY_STAFF">Delivery Staff Partner</option>
@@ -225,5 +234,13 @@ export default function RegisterPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-slate-500 text-xs">Loading registration portal...</div>}>
+      <RegisterFormContent />
+    </Suspense>
   );
 }

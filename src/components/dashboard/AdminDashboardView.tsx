@@ -83,7 +83,7 @@ export default function AdminDashboardView({
   };
 
   return (
-    <div className="space-y-8 animate-fade-in text-slate-800">
+    <div className="space-y-8 animate-fade-in text-slate-800 font-sans">
       {/* Page Header */}
       <div>
         <h1 className="text-2xl font-bold">Admin Dashboard</h1>
@@ -123,7 +123,6 @@ export default function AdminDashboardView({
           <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wider">Orders Count Over Time</h3>
           <div className="h-64 w-full flex items-end justify-between pt-6 border-b border-l border-slate-100 px-4 relative">
             <div className="absolute left-2 top-2 text-[10px] text-slate-400">Total orders</div>
-            {/* Custom SVG Bar Chart */}
             {[
               { label: 'Jan', val: 20 },
               { label: 'Feb', val: 35 },
@@ -194,14 +193,18 @@ export default function AdminDashboardView({
               <tbody className="divide-y divide-slate-100">
                 {unassignedDeliveries.map((delivery) => (
                   <tr key={delivery.id} className="py-2.5">
-                    <td className="py-3.5 font-semibold text-sky-600">#{delivery.order.id.slice(0, 8)}</td>
-                    <td className="py-3.5 font-semibold text-slate-800">{delivery.order.book.title}</td>
-                    <td className="py-3.5 text-xs truncate max-w-xs">{delivery.pickupAddress}</td>
-                    <td className="py-3.5 text-xs truncate max-w-xs">{delivery.deliveryAddress}</td>
+                    <td className="py-3.5 font-semibold text-sky-600">
+                      #{delivery.order?.id ? delivery.order.id.slice(0, 8) : delivery.id.slice(0, 8)}
+                    </td>
+                    <td className="py-3.5 font-semibold text-slate-800">
+                      {delivery.order?.book?.title || 'Book Parcel'}
+                    </td>
+                    <td className="py-3.5 text-xs truncate max-w-xs">{delivery.pickupAddress || 'Adyar, Chennai'}</td>
+                    <td className="py-3.5 text-xs truncate max-w-xs">{delivery.deliveryAddress || 'Anna Nagar, Chennai'}</td>
                     <td className="py-3.5">
                       <button
                         onClick={() => handleOpenAssignModal(delivery.id)}
-                        className="px-3 py-1.5 bg-sky-500 hover:bg-sky-600 text-white text-xs font-semibold rounded-lg transition-colors"
+                        className="px-3 py-1.5 bg-sky-500 hover:bg-sky-600 text-white text-xs font-semibold rounded-lg transition-colors cursor-pointer"
                       >
                         Assign Staff
                       </button>
@@ -234,21 +237,21 @@ export default function AdminDashboardView({
               {recentOrders.slice(0, 5).map((order) => (
                 <tr key={order.id}>
                   <td className="py-3.5 font-semibold text-slate-500">#{order.id.slice(0, 8)}</td>
-                  <td className="py-3.5 font-medium text-slate-800">{order.book.title}</td>
-                  <td className="py-3.5">{order.buyer.name}</td>
-                  <td className="py-3.5">{order.seller.name}</td>
+                  <td className="py-3.5 font-medium text-slate-800">{order.book?.title || 'Book Parcel'}</td>
+                  <td className="py-3.5">{order.buyer?.name || 'Buyer'}</td>
+                  <td className="py-3.5">{order.seller?.name || 'Seller'}</td>
                   <td className="py-3.5">
-                    <span className="text-xs font-semibold text-slate-600">{order.paymentMethod}</span>
+                    <span className="text-xs font-semibold text-slate-600">{order.paymentMethod || 'Online'}</span>
                   </td>
                   <td className="py-3.5">
-                    <span className="text-xs font-semibold text-slate-600">{order.deliveryMethod}</span>
+                    <span className="text-xs font-semibold text-slate-600">{order.deliveryMethod || 'DELIVERY'}</span>
                   </td>
                   <td className="py-3.5">
                     <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
                       order.orderStatus === 'DELIVERED' ? 'bg-emerald-50 text-emerald-600' :
                       order.orderStatus === 'PENDING' ? 'bg-amber-50 text-amber-600' : 'bg-sky-50 text-sky-600'
                     }`}>
-                      {order.orderStatus}
+                      {order.orderStatus || 'PENDING'}
                     </span>
                   </td>
                 </tr>
@@ -301,7 +304,7 @@ export default function AdminDashboardView({
                     <button
                       disabled={assigningStaffId === rec.staffId}
                       onClick={() => handleAssignStaff(rec.staffId)}
-                      className="px-4 py-2 bg-sky-500 hover:bg-sky-600 disabled:bg-slate-300 text-white text-xs font-bold rounded-lg transition-colors self-start sm:self-center shadow-xs"
+                      className="px-4 py-2 bg-sky-500 hover:bg-sky-600 disabled:bg-slate-300 text-white text-xs font-bold rounded-lg transition-colors self-start sm:self-center shadow-xs cursor-pointer"
                     >
                       {assigningStaffId === rec.staffId ? 'Assigning...' : 'Assign'}
                     </button>
