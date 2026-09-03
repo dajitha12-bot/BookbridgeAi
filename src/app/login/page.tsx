@@ -38,11 +38,15 @@ function LoginFormContent() {
 
       if (res && res.token) {
         document.cookie = `session_token=${res.token}; path=/; max-age=604800; SameSite=Lax;`;
+        document.cookie = `user_role=${res.role}; path=/; max-age=604800; SameSite=Lax;`;
       }
     } catch (err: any) {
-      console.error('Login action:', err);
+      console.error('Login action error:', err);
     } finally {
-      window.location.href = targetUrl;
+      // 100ms micro-delay gives the browser DOM time to persist cookies before page location swap
+      setTimeout(() => {
+        window.location.replace(targetUrl);
+      }, 100);
     }
   };
 
