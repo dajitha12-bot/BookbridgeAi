@@ -1,54 +1,80 @@
 import fs from 'fs';
 import path from 'path';
+import os from 'os';
 
-const DATA_DIR = path.join(process.cwd(), 'data');
+// Memory cache store for serverless environment resilience
+const memoryStore = new Map<string, any>();
 
-// Ensure data directory exists
-if (!fs.existsSync(DATA_DIR)) {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
-}
-
-/**
- * Get absolute path of a JSON database file
- */
-export function getFilePath(filename: string): string {
-  return path.join(DATA_DIR, filename);
-}
-
-/**
- * Reads a JSON file list, returning empty array if file does not exist
- */
-export function readCollection<T>(filename: string): T[] {
-  const filePath = getFilePath(filename);
+function getWritableDir(): string {
   try {
-    if (!fs.existsSync(filePath)) {
-      fs.writeFileSync(filePath, JSON.stringify([]));
-      return [];
+    const tmpDir = path.join(os.tmpdir(), 'bookbridge-data');
+    if (!fs.existsSync(tmpDir)) {
+      fs.mkdirSync(tmpDir, { recursive: true });
     }
-    const data = fs.readFileSync(filePath, 'utf-8');
-    return JSON.parse(data || '[]');
-  } catch (error) {
-    console.error(`Error reading database file: ${filename}`, error);
-    return [];
+    return tmpDir;
+  } catch (e) {
+    return os.tmpdir();
   }
 }
 
+const SEED_DIR = path.join(process.cwd(), 'data');
+
 /**
- * Writes a list to a JSON file atomically (via temporary file swap)
+ * Reads a JSON collection with memory caching and Vercel serverless /tmp fallback
+ */
+export function readCollection<T>(filename: string): T[] {
+  // 1. Check in-memory store first
+  if (memoryStore.has(filename)) {
+    return memoryStore.get(filename) as T[];
+  }
+
+  // 2. Try reading from writable tmp directory
+  try {
+    const writableDir = getWritableDir();
+    const tmpFilePath = path.join(writableDir, filename);
+    if (fs.existsSync(tmpFilePath)) {
+      const data = fs.readFileSync(tmpFilePath, 'utf-8');
+      const parsed = JSON.parse(data || '[]');
+      memoryStore.set(filename, parsed);
+      return parsed;
+    }
+  } catch (e) {
+    // Ignore error and fall back to seed
+  }
+
+  // 3. Fallback to reading seed file from process.cwd()/data
+  try {
+    const seedFilePath = path.join(SEED_DIR, filename);
+    if (fs.existsSync(seedFilePath)) {
+      const data = fs.readFileSync(seedFilePath, 'utf-8');
+      const parsed = JSON.parse(data || '[]');
+      memoryStore.set(filename, parsed);
+      return parsed;
+    }
+  } catch (e) {
+    console.error(`Error reading seed database file: ${filename}`, e);
+  }
+
+  memoryStore.set(filename, []);
+  return [];
+}
+
+/**
+ * Writes a list to memory store and attempts disk write to writable /tmp
  */
 export function writeCollection<T>(filename: string, data: T[]): boolean {
-  const filePath = getFilePath(filename);
-  const tempPath = `${filePath}.tmp`;
+  // 1. Always update memory store immediately
+  memoryStore.set(filename, data);
+
+  // 2. Try saving to writable tmp directory for serverless environments
   try {
-    fs.writeFileSync(tempPath, JSON.stringify(data, null, 2), 'utf-8');
-    fs.renameSync(tempPath, filePath);
+    const writableDir = getWritableDir();
+    const tmpFilePath = path.join(writableDir, filename);
+    fs.writeFileSync(tmpFilePath, JSON.stringify(data, null, 2), 'utf-8');
     return true;
-  } catch (error) {
-    console.error(`Error writing database file: ${filename}`, error);
-    if (fs.existsSync(tempPath)) {
-      try { fs.unlinkSync(tempPath); } catch {}
-    }
-    return false;
+  } catch (e) {
+    console.warn(`Using in-memory store for ${filename} on serverless environment.`);
+    return true;
   }
 }
 
