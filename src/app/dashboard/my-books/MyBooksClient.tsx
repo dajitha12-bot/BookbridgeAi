@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { deleteBookAction, markBookStatusAction } from '../../../actions/bookActions';
-import { BookOpen, PlusCircle, Trash, Eye, EyeOff, Heart, ShoppingBag, ClipboardList } from 'lucide-react';
+import { BookOpen, PlusCircle, Trash, Eye, EyeOff, Heart, ShoppingBag, ClipboardList, MessageSquarePlus, DollarSign, RefreshCw, Gift } from 'lucide-react';
 
 interface MyBooksClientProps {
   initialBooks: any[];
@@ -20,6 +20,10 @@ export default function MyBooksClient({ initialBooks }: MyBooksClientProps) {
     { label: 'Wishlist', href: '/dashboard/wishlist', active: false, icon: Heart },
     { label: 'My Orders', href: '/dashboard/orders', active: false, icon: ShoppingBag },
     { label: 'My Rentals', href: '/dashboard/rentals', active: false, icon: ClipboardList },
+    { label: 'My Requests', href: '/dashboard/requests', active: false, icon: MessageSquarePlus },
+    { label: 'Sold', href: '/dashboard/sales', active: false, icon: DollarSign },
+    { label: 'Exchanged', href: '/dashboard/exchange', active: false, icon: RefreshCw },
+    { label: 'Donated', href: '/dashboard/donations', active: false, icon: Gift },
   ];
 
   const handleDelete = async (bookId: string) => {
@@ -71,15 +75,15 @@ export default function MyBooksClient({ initialBooks }: MyBooksClientProps) {
         </Link>
       </div>
 
-      {/* Modern Navigation Tabs: My Listed Books | Wishlist | My Orders | My Rentals */}
-      <div className="flex overflow-x-auto border-b border-slate-200 pb-px gap-2">
+      {/* Navigation Tabs Bar */}
+      <div className="flex overflow-x-auto border-b border-slate-200 pb-px gap-2 scrollbar-thin">
         {navTabs.map((tab) => {
           const Icon = tab.icon;
           return (
             <Link
               key={tab.label}
               href={tab.href}
-              className={`px-4 py-2.5 text-xs font-bold rounded-t-xl transition-colors border-b-2 flex items-center gap-2 flex-shrink-0 ${
+              className={`px-3.5 py-2 text-xs font-bold rounded-t-xl transition-colors border-b-2 flex items-center gap-1.5 flex-shrink-0 ${
                 tab.active
                   ? 'border-blue-600 text-blue-600 bg-blue-50/50'
                   : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'
