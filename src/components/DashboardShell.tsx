@@ -12,7 +12,6 @@ import {
   PlusCircle,
   MessageSquarePlus,
   RefreshCw,
-  GitBranch,
   Heart,
   ShoppingBag,
   DollarSign,
@@ -28,40 +27,41 @@ import {
   Users as UsersIcon,
   CreditCard,
   BarChart3,
-  TrendingUp,
-  ClipboardList,
+  Brain,
   Settings as SettingsIcon,
-  Gift
+  Gift,
+  ClipboardList,
+  CheckCircle2,
+  Package,
 } from 'lucide-react';
 
 interface SidebarItem {
   label: string;
   href: string;
-  icon: React.ComponentType<any>;
+  icon: React.ComponentType<{ className?: string }>;
 }
 
-export default function DashboardShell({
-  sessionUser,
-  children
-}: {
-  sessionUser: { id: string; name: string; email: string; role: string; avatarUrl?: string | null };
-  children: React.ReactNode;
-}) {
+export default function DashboardShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
   const { unreadCount } = useNotifications();
-  
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  // Close drawer on path change
+  // Fallback demo user if AuthContext loading
+  const sessionUser = user || {
+    name: 'Demo User',
+    role: 'USER',
+  };
+
+  // Close mobile sidebar on route change
   useEffect(() => {
     setMobileOpen(false);
   }, [pathname]);
 
   const role = sessionUser.role.toUpperCase();
 
-  // Navigation Links according to Role & Split Layout requirements
+  // Navigation Links according to Role
   let navigation: SidebarItem[] = [];
 
   if (role === 'USER') {
@@ -73,7 +73,6 @@ export default function DashboardShell({
       { label: 'Book Donations', href: '/dashboard/donations', icon: Gift },
       { label: 'Book Requests', href: '/dashboard/requests', icon: MessageSquarePlus },
       { label: 'Exchange', href: '/dashboard/exchange', icon: RefreshCw },
-      { label: 'SwapChain', href: '/dashboard/swapchain', icon: GitBranch },
       { label: 'Wishlist', href: '/dashboard/wishlist', icon: Heart },
       { label: 'My Orders', href: '/dashboard/orders', icon: ShoppingBag },
       { label: 'My Sales', href: '/dashboard/sales', icon: DollarSign },
@@ -91,7 +90,6 @@ export default function DashboardShell({
       { label: 'Books', href: '/admin/books', icon: BookOpen },
       { label: 'Orders', href: '/admin/orders', icon: ShoppingBag },
       { label: 'Exchanges', href: '/admin/exchanges', icon: RefreshCw },
-      { label: 'SwapChain', href: '/admin/swapchain', icon: GitBranch },
       { label: 'Rentals', href: '/admin/rentals', icon: ClipboardList },
       { label: 'Delivery Staff', href: '/admin/delivery-staff', icon: Truck },
       { label: 'Deliveries', href: '/admin/deliveries', icon: Package },
@@ -150,147 +148,144 @@ export default function DashboardShell({
   };
 
   return (
-    <div className="flex h-screen bg-[#f8fafc] overflow-hidden font-sans">
-      {/* 1. Desktop Sidebar */}
-      <aside
-        className={`hidden md:flex flex-col flex-shrink-0 bg-[#0f172a] border-r border-slate-800 transition-all duration-300 ${
-          collapsed ? 'w-20' : 'w-64'
-        }`}
-      >
-        {/* Sidebar Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800 h-16">
-          {(!collapsed) ? (
-            <Link href="/" className="flex items-center space-x-2">
-              <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center font-bold text-white text-lg">B</div>
-              <span className="font-bold text-white text-base tracking-tight">BookBridge AI</span>
-            </Link>
-          ) : (
-            <div className="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center font-bold text-white text-lg mx-auto">B</div>
-          )}
+    <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
+      {/* Mobile Top Navigation */}
+      <header className="md:hidden bg-slate-900 text-white h-16 px-4 flex items-center justify-between sticky top-0 z-50 shadow-md">
+        <div className="flex items-center space-x-3">
           <button
-            onClick={() => setCollapsed(!collapsed)}
-            className="hidden md:flex p-1.5 rounded-lg text-slate-450 hover:bg-slate-800 hover:text-white"
+            onClick={() => setMobileOpen(!mobileOpen)}
+            className="p-2 rounded-md hover:bg-slate-800 text-slate-300 focus:outline-none"
           >
-            {collapsed ? <ChevronRight className="w-4 h-4 text-slate-450" /> : <ChevronLeft className="w-4 h-4 text-slate-455" />}
+            {mobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
+          <div className="flex items-center space-x-2">
+            <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center font-bold text-white text-sm">B</div>
+            <span className="font-bold tracking-tight text-white">BookBridge AI</span>
+          </div>
         </div>
 
-        {/* Navigation Items */}
-        <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
-          {renderNavItems()}
-        </nav>
-
-        {/* Sidebar Footer */}
-        <div className="p-3 border-t border-slate-800">
-          <button
-            onClick={logout}
-            className="flex items-center w-full px-4 py-3 text-slate-450 hover:bg-slate-850 hover:text-red-400 rounded-lg transition-colors font-medium"
-          >
-            <LogOut className="w-5 h-5 flex-shrink-0" />
-            {!collapsed && <span className="ml-3 text-sm">Log Out</span>}
-          </button>
-        </div>
-      </aside>
-
-      {/* 2. Mobile Sidebar Drawer Overlay */}
-      {mobileOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-slate-900/40 md:hidden backdrop-blur-xs"
-          onClick={() => setMobileOpen(false)}
-        />
-      )}
-
-      {/* Mobile Drawer Side Container */}
-      <aside
-        className={`fixed top-0 bottom-0 left-0 z-50 flex flex-col w-64 bg-[#0f172a] border-r border-slate-800 transition-transform duration-300 md:hidden ${
-          mobileOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
-      >
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800 h-16">
-          <Link href="/" className="flex items-center space-x-2">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center font-bold text-white text-lg">B</div>
-            <span className="font-bold text-white text-base">BookBridge AI</span>
+        <div className="flex items-center space-x-3">
+          <Link href="/dashboard/notifications" className="relative p-2 text-slate-300 hover:text-white">
+            <Bell className="w-5 h-5" />
+            {unreadCount > 0 && (
+              <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+                {unreadCount}
+              </span>
+            )}
           </Link>
-          <button
+        </div>
+      </header>
+
+      <div className="flex-1 flex relative">
+        {/* Mobile Backdrop */}
+        {mobileOpen && (
+          <div
+            className="fixed inset-0 bg-slate-900/60 z-40 md:hidden backdrop-blur-xs"
             onClick={() => setMobileOpen(false)}
-            className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-        <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
-          {renderNavItems()}
-        </nav>
-        <div className="p-3 border-t border-slate-800">
-          <button
-            onClick={logout}
-            className="flex items-center w-full px-4 py-3 text-slate-450 hover:bg-slate-850 hover:text-red-400 rounded-lg transition-colors font-medium"
-          >
-            <LogOut className="w-5 h-5 flex-shrink-0" />
-            <span className="ml-3 text-sm">Log Out</span>
-          </button>
-        </div>
-      </aside>
+          />
+        )}
 
-      {/* 3. Main Container */}
-      <div className="flex flex-col flex-1 h-screen overflow-hidden">
-        {/* Top Header */}
-        <header className="flex items-center justify-between px-6 py-4 bg-white border-b border-slate-100 h-16 z-30">
-          {/* Mobile hamburger menu */}
-          <button
-            onClick={() => setMobileOpen(true)}
-            className="p-2 -ml-2 rounded-lg text-slate-500 hover:bg-sky-50 md:hidden"
-          >
-            <Menu className="w-6 h-6" />
-          </button>
+        {/* Sidebar */}
+        <aside
+          className={`fixed md:sticky top-0 z-50 h-screen bg-slate-900 text-slate-300 flex flex-col transition-all duration-300 ease-in-out border-r border-slate-800 ${
+            mobileOpen ? 'translate-x-0 w-64' : '-translate-x-full md:translate-x-0'
+          } ${collapsed ? 'md:w-20' : 'md:w-64'}`}
+        >
+          {/* Sidebar Header */}
+          <div className="h-16 flex items-center justify-between px-4 border-b border-slate-800 flex-shrink-0">
+            {(!collapsed || mobileOpen) ? (
+              <Link href="/" className="flex items-center space-x-2.5">
+                <div className="w-8 h-8 rounded-xl bg-blue-600 flex items-center justify-center font-extrabold text-white text-base shadow-sm">B</div>
+                <span className="font-extrabold text-white text-base tracking-tight">BookBridge AI</span>
+              </Link>
+            ) : (
+              <div className="w-full flex justify-center">
+                <div className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center font-extrabold text-white text-lg shadow-sm">B</div>
+              </div>
+            )}
 
-          {/* Page Context/Title */}
-          <div className="hidden md:flex items-center text-sm text-slate-500 font-medium">
-            BookBridge Platform &gt; {role} Panel
+            <button
+              onClick={() => setCollapsed(!collapsed)}
+              className="hidden md:flex items-center justify-center w-7 h-7 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
+            >
+              {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+            </button>
           </div>
 
-          {/* User Profile Card in Header */}
-          <div className="flex items-center space-x-4">
-            {/* Quick Notify Icon */}
-            <Link 
-              href={role === 'ADMIN' ? '/admin/notifications' : role === 'DELIVERY_STAFF' ? '/staff/notifications' : '/dashboard/notifications'} 
-              className="relative p-2 rounded-full text-slate-400 hover:bg-sky-50 hover:text-sky-500 transition-colors"
-            >
-              <Bell className="w-5 h-5" />
-              {unreadCount > 0 && (
-                <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white animate-pulse" />
-              )}
-            </Link>
-
-            {/* Profile Avatar & Info */}
-            <div className="flex items-center space-x-3 border-l border-slate-100 pl-4">
-              <div className="text-right hidden sm:block">
-                <div className="text-sm font-semibold text-slate-800 leading-tight">{sessionUser.name}</div>
-                <div className="text-[10px] font-bold text-sky-600 bg-sky-50 px-2 py-0.5 rounded-full inline-block mt-0.5">
+          {/* User Profile Summary */}
+          <div className="px-4 py-4 border-b border-slate-800/80 bg-slate-950/40 flex items-center space-x-3 flex-shrink-0">
+            <div className="w-9 h-9 rounded-full bg-blue-600/20 border border-blue-500/30 text-blue-400 flex items-center justify-center font-bold text-sm flex-shrink-0">
+              {sessionUser.name.charAt(0).toUpperCase()}
+            </div>
+            {(!collapsed || mobileOpen) && (
+              <div className="overflow-hidden">
+                <p className="text-xs font-bold text-white truncate">{sessionUser.name}</p>
+                <span className="text-[9px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 inline-block mt-0.5">
                   {role}
-                </div>
+                </span>
               </div>
-              <Link href={role === 'ADMIN' ? '/admin/settings' : role === 'DELIVERY_STAFF' ? '/staff/profile' : '/dashboard/profile'}>
-                {sessionUser.avatarUrl ? (
-                  <img
-                    src={sessionUser.avatarUrl}
-                    alt={sessionUser.name}
-                    className="w-9 h-9 rounded-full object-cover border border-sky-100 hover:border-sky-500 transition-colors"
-                  />
-                ) : (
-                  <div className="w-9 h-9 rounded-full bg-sky-100 text-sky-600 flex items-center justify-center font-bold hover:bg-sky-200 transition-colors animate-fade-in">
-                    {sessionUser.name.charAt(0).toUpperCase()}
-                  </div>
+            )}
+          </div>
+
+          {/* Nav Items */}
+          <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1 scrollbar-thin scrollbar-thumb-slate-800">
+            {renderNavItems()}
+          </nav>
+
+          {/* Footer / Logout */}
+          <div className="p-3 border-t border-slate-800 flex-shrink-0">
+            <button
+              onClick={logout}
+              className={`w-full flex items-center px-4 py-3 rounded-lg text-slate-400 hover:bg-red-500/10 hover:text-red-400 transition-colors ${
+                collapsed && !mobileOpen ? 'justify-center' : 'space-x-3'
+              }`}
+            >
+              <LogOut className="w-5 h-5 flex-shrink-0 text-slate-400 group-hover:text-red-400" />
+              {(!collapsed || mobileOpen) && <span className="text-sm font-medium">Log Out</span>}
+            </button>
+          </div>
+        </aside>
+
+        {/* Main Content Area */}
+        <div className="flex-1 flex flex-col min-w-0 bg-slate-50 min-h-screen">
+          {/* Top Desktop Bar */}
+          <header className="hidden md:flex h-16 bg-white border-b border-slate-200/80 px-8 items-center justify-between sticky top-0 z-30 shadow-2xs">
+            <div className="flex items-center space-x-4">
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                BookBridge Platform &gt; <span className="text-blue-600 font-extrabold">{role} Panel</span>
+              </span>
+            </div>
+
+            <div className="flex items-center space-x-4">
+              <Link
+                href="/dashboard/notifications"
+                className="relative p-2 text-slate-400 hover:text-slate-600 transition-colors rounded-lg hover:bg-slate-100"
+              >
+                <Bell className="w-5 h-5" />
+                {unreadCount > 0 && (
+                  <span className="absolute top-1.5 right-1.5 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center border-2 border-white">
+                    {unreadCount}
+                  </span>
                 )}
               </Link>
+              <div className="h-6 w-px bg-slate-200" />
+              <div className="flex items-center space-x-3">
+                <div className="text-right">
+                  <p className="text-xs font-bold text-slate-800">{sessionUser.name}</p>
+                  <p className="text-[10px] text-slate-400 font-medium">{role}</p>
+                </div>
+                <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-xs">
+                  {sessionUser.name.charAt(0).toUpperCase()}
+                </div>
+              </div>
             </div>
-          </div>
-        </header>
+          </header>
 
-        {/* Content Viewport */}
-        <main className="flex-1 overflow-y-auto p-6 bg-slate-50">
-          {children}
-        </main>
+          {/* Main Viewport Container */}
+          <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
+            {children}
+          </main>
+        </div>
       </div>
     </div>
   );
