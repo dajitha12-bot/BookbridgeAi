@@ -1,16 +1,23 @@
 'use client';
 
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { loginAction } from '../../actions/authActions';
-import { Lock, Mail, AlertCircle, ArrowRight, User as UserIcon, Shield, Truck } from 'lucide-react';
+import { Lock, Mail, AlertCircle, ArrowRight, User as UserIcon, Shield, Truck, Check } from 'lucide-react';
 
 function LoginFormContent() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const targetRole = searchParams.get('role') || 'user';
   
+  const defaultEmail = targetRole === 'admin' 
+    ? 'admin@bookbridge.com' 
+    : targetRole === 'staff' 
+    ? 'dhinesh@delivery.com' 
+    : 'ajitha@gmail.com';
+
+  const [email, setEmail] = useState(defaultEmail);
+  const [password, setPassword] = useState('password123');
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -21,11 +28,15 @@ function LoginFormContent() {
 
     try {
       const formData = new FormData(e.currentTarget);
+      // Ensure current state values are passed if browser autocomplete didn't update formData
+      formData.set('email', email);
+      formData.set('password', password);
+      formData.set('role', targetRole.toUpperCase());
+
       const res = await loginAction(null, formData);
 
       if (res.success) {
         const targetUrl = res.redirectUrl || (targetRole === 'admin' ? '/admin' : targetRole === 'staff' ? '/staff' : '/dashboard');
-        // Perform hard browser location redirect so Vercel includes the HTTP session cookie
         window.location.href = targetUrl;
       } else {
         setError(res.error || 'Login failed. Please try again.');
@@ -35,6 +46,11 @@ function LoginFormContent() {
       setError(err.message || 'An unexpected error occurred during login.');
       setIsPending(false);
     }
+  };
+
+  const handleQuickDemoLogin = (demoEmail: string) => {
+    setEmail(demoEmail);
+    setPassword('password123');
   };
 
   const getRoleHeader = () => {
@@ -99,9 +115,10 @@ function LoginFormContent() {
                   name="email"
                   type="email"
                   required
-                  autoComplete="email"
-                  placeholder={targetRole === 'admin' ? 'admin@bookbridge.com' : targetRole === 'staff' ? 'dhinesh@delivery.com' : 'ajitha@gmail.com'}
-                  className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 placeholder-slate-400 bg-white"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Enter email address"
+                  className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 bg-white font-medium"
                 />
               </div>
             </div>
@@ -123,9 +140,10 @@ function LoginFormContent() {
                   name="password"
                   type="password"
                   required
-                  autoComplete="current-password"
-                  placeholder="••••••••"
-                  className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 placeholder-slate-400 bg-white"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter password"
+                  className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 bg-white font-medium"
                 />
               </div>
             </div>
@@ -141,23 +159,58 @@ function LoginFormContent() {
             </button>
           </form>
 
-          {/* Quick Demo Accounts Banner */}
+          {/* Quick Clickable Demo Accounts */}
           <div className="bg-blue-50/50 border border-blue-100 p-4 rounded-lg space-y-2.5">
-            <h4 className="text-[10px] font-bold text-blue-600 uppercase tracking-wider">Demo Accounts (Password: password123)</h4>
-            <div className="text-[11px] text-slate-600 space-y-1 font-medium">
+            <h4 className="text-[10px] font-bold text-blue-600 uppercase tracking-wider">Click Demo Account to Autofill:</h4>
+            <div className="flex flex-col gap-2 text-xs">
               {targetRole === 'admin' && (
-                <div><span className="font-bold">Admin:</span> admin@bookbridge.com</div>
+                <button
+                  type="button"
+                  onClick={() => handleQuickDemoLogin('admin@bookbridge.com')}
+                  className="text-left px-3 py-2 bg-white border border-blue-200 hover:bg-blue-50 rounded-lg text-slate-700 font-semibold transition-colors flex justify-between items-center"
+                >
+                  <span><strong>Admin:</strong> admin@bookbridge.com</span>
+                  {email === 'admin@bookbridge.com' && <Check className="w-3.5 h-3.5 text-blue-600" />}
+                </button>
               )}
               {targetRole === 'staff' && (
                 <>
-                  <div><span className="font-bold">Staff 1 (Chennai):</span> dhinesh@delivery.com</div>
-                  <div><span className="font-bold">Staff 2 (Madurai):</span> karthik@delivery.com</div>
+                  <button
+                    type="button"
+                    onClick={() => handleQuickDemoLogin('dhinesh@delivery.com')}
+                    className="text-left px-3 py-2 bg-white border border-blue-200 hover:bg-blue-50 rounded-lg text-slate-700 font-semibold transition-colors flex justify-between items-center"
+                  >
+                    <span><strong>Staff 1 (Chennai):</strong> dhinesh@delivery.com</span>
+                    {email === 'dhinesh@delivery.com' && <Check className="w-3.5 h-3.5 text-blue-600" />}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleQuickDemoLogin('karthik@delivery.com')}
+                    className="text-left px-3 py-2 bg-white border border-blue-200 hover:bg-blue-50 rounded-lg text-slate-700 font-semibold transition-colors flex justify-between items-center"
+                  >
+                    <span><strong>Staff 2 (Madurai):</strong> karthik@delivery.com</span>
+                    {email === 'karthik@delivery.com' && <Check className="w-3.5 h-3.5 text-blue-600" />}
+                  </button>
                 </>
               )}
               {targetRole === 'user' && (
                 <>
-                  <div><span className="font-bold">User 1 (Chennai):</span> ajitha@gmail.com</div>
-                  <div><span className="font-bold">User 2 (Chennai):</span> rahul@gmail.com</div>
+                  <button
+                    type="button"
+                    onClick={() => handleQuickDemoLogin('ajitha@gmail.com')}
+                    className="text-left px-3 py-2 bg-white border border-blue-200 hover:bg-blue-50 rounded-lg text-slate-700 font-semibold transition-colors flex justify-between items-center"
+                  >
+                    <span><strong>User 1 (Ajitha):</strong> ajitha@gmail.com</span>
+                    {email === 'ajitha@gmail.com' && <Check className="w-3.5 h-3.5 text-blue-600" />}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleQuickDemoLogin('rahul@gmail.com')}
+                    className="text-left px-3 py-2 bg-white border border-blue-200 hover:bg-blue-50 rounded-lg text-slate-700 font-semibold transition-colors flex justify-between items-center"
+                  >
+                    <span><strong>User 2 (Rahul):</strong> rahul@gmail.com</span>
+                    {email === 'rahul@gmail.com' && <Check className="w-3.5 h-3.5 text-blue-600" />}
+                  </button>
                 </>
               )}
             </div>
