@@ -63,10 +63,17 @@ export async function createSession(user: SessionUser) {
 }
 
 /**
- * Deletes the session cookie.
+ * Deletes the session cookie completely.
  */
 export async function deleteSession() {
   const cookieStore = await cookies();
+  cookieStore.set('session_token', '', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    expires: new Date(0),
+    path: '/',
+  });
   cookieStore.delete('session_token');
 }
 

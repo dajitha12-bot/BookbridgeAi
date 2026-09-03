@@ -1,1 +1,33 @@
-[]
+[
+  {
+    "id": "chain_demo_101",
+    "status": "CONFIRMED",
+    "members": [
+      {
+        "userId": "usr-user1",
+        "userName": "Ajitha Priya",
+        "offeredBookId": "bk-1",
+        "offeredBookTitle": "Python Crash Course",
+        "requestedBookId": "bk-2",
+        "requestedBookTitle": "Eloquent JavaScript"
+      },
+      {
+        "userId": "usr-user2",
+        "userName": "Rahul Subramanian",
+        "offeredBookId": "bk-2",
+        "offeredBookTitle": "Eloquent JavaScript",
+        "requestedBookId": "bk-3",
+        "requestedBookTitle": "Clean Code"
+      },
+      {
+        "userId": "usr-user3",
+        "userName": "Priya Dharshini",
+        "offeredBookId": "bk-3",
+        "offeredBookTitle": "Clean Code",
+        "requestedBookId": "bk-1",
+        "requestedBookTitle": "Python Crash Course"
+      }
+    ],
+    "createdAt": "2026-09-02T10:00:00.000Z"
+  }
+]

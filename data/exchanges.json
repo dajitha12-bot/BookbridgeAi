@@ -1,11 +1,20 @@
 [
   {
-    "id": "exch-1",
+    "id": "exch_demo_201",
     "senderId": "usr-user1",
     "receiverId": "usr-user2",
     "offeredBookId": "bk-1",
     "requestedBookId": "bk-2",
     "status": "PENDING",
-    "createdAt": "2026-08-25T16:17:01.812Z"
+    "createdAt": "2026-09-01T14:30:00.000Z"
+  },
+  {
+    "id": "exch_demo_202",
+    "senderId": "usr-user2",
+    "receiverId": "usr-user3",
+    "offeredBookId": "bk-2",
+    "requestedBookId": "bk-3",
+    "status": "ACCEPTED",
+    "createdAt": "2026-08-30T09:15:00.000Z"
   }
 ]

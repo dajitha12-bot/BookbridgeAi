@@ -39,7 +39,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(true);
       await logoutAction();
       setUser(null);
-      window.location.href = '/login';
+      // Redirect to Landing Page / Role Selection screen so user can pick any role
+      window.location.href = '/';
     } catch (e) {
       console.error('Failed to log out', e);
     } finally {
