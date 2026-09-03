@@ -17,16 +17,27 @@ export default function RegisterPage() {
     setIsPending(true);
     setError(null);
 
-    const formData = new FormData(e.currentTarget);
-    const res = await registerAction(null, formData);
+    try {
+      const formData = new FormData(e.currentTarget);
+      const res = await registerAction(null, formData);
 
-    if (res.success) {
-      router.push('/dashboard');
-      router.refresh();
-    } else {
-      setError(res.error || 'Registration failed.');
+      if (res.success) {
+        const role = (res.role || 'USER').toUpperCase();
+        let targetUrl = '/dashboard';
+        if (role === 'ADMIN') {
+          targetUrl = '/admin';
+        } else if (role === 'DELIVERY_STAFF') {
+          targetUrl = '/staff';
+        }
+        window.location.href = targetUrl;
+      } else {
+        setError(res.error || 'Registration failed.');
+        setIsPending(false);
+      }
+    } catch (err: any) {
+      setError(err.message || 'An error occurred during registration.');
+      setIsPending(false);
     }
-    setIsPending(false);
   };
 
   return (
@@ -39,7 +50,7 @@ export default function RegisterPage() {
         <h2 className="text-2xl font-extrabold text-slate-900">Create your account</h2>
         <p className="text-xs text-slate-500">
           Already have an account?{' '}
-          <Link href="/login" className="font-semibold text-blue-500 hover:text-blue-650">
+          <Link href="/login" className="font-semibold text-blue-500 hover:text-blue-600">
             Sign in instead
           </Link>
         </p>
@@ -178,7 +189,7 @@ export default function RegisterPage() {
                 />
               </div>
 
-              {/* Role Selection (Demo convenience) */}
+              {/* Role Selection */}
               <div className="space-y-1.5">
                 <label htmlFor="role" className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
                   Register as
@@ -214,7 +225,7 @@ export default function RegisterPage() {
             <button
               type="submit"
               disabled={isPending}
-              className="w-full py-3 bg-blue-600 hover:bg-blue-755 disabled:bg-slate-300 text-white font-bold rounded-lg text-sm transition-colors shadow-xs flex items-center justify-center space-x-1 cursor-pointer"
+              className="w-full py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white font-bold rounded-lg text-sm transition-colors shadow-xs flex items-center justify-center space-x-1 cursor-pointer"
             >
               <span>{isPending ? 'Creating Account...' : 'Register Account'}</span>
               {!isPending && <ArrowRight className="w-4 h-4" />}

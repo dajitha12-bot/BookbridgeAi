@@ -19,23 +19,28 @@ function LoginFormContent() {
     setIsPending(true);
     setError(null);
 
-    const formData = new FormData(e.currentTarget);
-    const res = await loginAction(null, formData);
+    try {
+      const formData = new FormData(e.currentTarget);
+      const res = await loginAction(null, formData);
 
-    if (res.success) {
-      const role = (res.role || targetRole).toUpperCase();
-      if (role === 'ADMIN') {
-        router.push('/admin');
-      } else if (role === 'DELIVERY_STAFF') {
-        router.push('/staff');
+      if (res.success) {
+        const role = (res.role || targetRole).toUpperCase();
+        let targetUrl = '/dashboard';
+        if (role === 'ADMIN') {
+          targetUrl = '/admin';
+        } else if (role === 'DELIVERY_STAFF') {
+          targetUrl = '/staff';
+        }
+        // Use hard navigation to ensure session cookie is sent with the HTTP request
+        window.location.href = targetUrl;
       } else {
-        router.push('/dashboard');
+        setError(res.error || 'Login failed. Please try again.');
+        setIsPending(false);
       }
-      router.refresh();
-    } else {
-      setError(res.error || 'Login failed.');
+    } catch (err: any) {
+      setError(err.message || 'An unexpected error occurred during login.');
+      setIsPending(false);
     }
-    setIsPending(false);
   };
 
   const getRoleHeader = () => {
