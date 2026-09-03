@@ -52,7 +52,8 @@ export async function registerAction(prevState: any, formData: FormData) {
         email: existingUser.email,
         role: existingUser.role,
       });
-      return { success: true, role: existingUser.role };
+      const redirectUrl = existingUser.role === 'ADMIN' ? '/admin' : existingUser.role === 'DELIVERY_STAFF' ? '/staff' : '/dashboard';
+      return { success: true, role: existingUser.role, redirectUrl };
     }
 
     // Hash password
@@ -105,7 +106,8 @@ export async function registerAction(prevState: any, formData: FormData) {
       role: newUser.role,
     });
 
-    return { success: true, role: newUser.role };
+    const redirectUrl = newUser.role === 'ADMIN' ? '/admin' : newUser.role === 'DELIVERY_STAFF' ? '/staff' : '/dashboard';
+    return { success: true, role: newUser.role, redirectUrl };
   } catch (error: any) {
     console.error('Registration error:', error);
     return { success: false, error: error.message || 'Something went wrong during registration.' };
@@ -165,7 +167,8 @@ export async function loginAction(prevState: any, formData: FormData) {
       role: user.role,
     });
 
-    return { success: true, role: user.role };
+    const redirectUrl = user.role === 'ADMIN' ? '/admin' : user.role === 'DELIVERY_STAFF' ? '/staff' : '/dashboard';
+    return { success: true, role: user.role, redirectUrl };
   } catch (error: any) {
     console.error('Login error:', error);
     return { success: false, error: 'An unexpected error occurred during login.' };

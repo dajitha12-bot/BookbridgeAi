@@ -24,14 +24,8 @@ function LoginFormContent() {
       const res = await loginAction(null, formData);
 
       if (res.success) {
-        const role = (res.role || targetRole).toUpperCase();
-        let targetUrl = '/dashboard';
-        if (role === 'ADMIN') {
-          targetUrl = '/admin';
-        } else if (role === 'DELIVERY_STAFF') {
-          targetUrl = '/staff';
-        }
-        // Use hard navigation to ensure session cookie is sent with the HTTP request
+        const targetUrl = res.redirectUrl || (targetRole === 'admin' ? '/admin' : targetRole === 'staff' ? '/staff' : '/dashboard');
+        // Perform hard browser location redirect so Vercel includes the HTTP session cookie
         window.location.href = targetUrl;
       } else {
         setError(res.error || 'Login failed. Please try again.');

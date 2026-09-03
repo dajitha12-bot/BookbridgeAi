@@ -38,7 +38,7 @@ export interface SessionUser {
 }
 
 /**
- * Creates and sets an encrypted session cookie.
+ * Creates and sets an encrypted session cookie compatible with all environments
  */
 export async function createSession(user: SessionUser) {
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
@@ -55,7 +55,6 @@ export async function createSession(user: SessionUser) {
   
   cookieStore.set('session_token', token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     expires: expiresAt,
     path: '/',
@@ -63,13 +62,12 @@ export async function createSession(user: SessionUser) {
 }
 
 /**
- * Deletes the session cookie completely.
+ * Deletes the session cookie completely
  */
 export async function deleteSession() {
   const cookieStore = await cookies();
   cookieStore.set('session_token', '', {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     expires: new Date(0),
     path: '/',
@@ -78,7 +76,7 @@ export async function deleteSession() {
 }
 
 /**
- * Reads, decrypts, and validates the session cookie.
+ * Reads, decrypts, and validates the session cookie
  */
 export async function getSession(): Promise<SessionUser | null> {
   const cookieStore = await cookies();

@@ -1,14 +1,11 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { registerAction } from '../../actions/authActions';
 import { Lock, Mail, User, Phone, MapPin, AlertCircle, ArrowRight } from 'lucide-react';
 
 export default function RegisterPage() {
-  const router = useRouter();
-  
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -22,13 +19,7 @@ export default function RegisterPage() {
       const res = await registerAction(null, formData);
 
       if (res.success) {
-        const role = (res.role || 'USER').toUpperCase();
-        let targetUrl = '/dashboard';
-        if (role === 'ADMIN') {
-          targetUrl = '/admin';
-        } else if (role === 'DELIVERY_STAFF') {
-          targetUrl = '/staff';
-        }
+        const targetUrl = res.redirectUrl || '/dashboard';
         window.location.href = targetUrl;
       } else {
         setError(res.error || 'Registration failed.');
