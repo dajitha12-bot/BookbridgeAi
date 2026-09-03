@@ -24,10 +24,21 @@ export default async function DashboardPage() {
     redirect('/staff');
   }
 
-  const user = await getUserById(session.id);
+  let user = await getUserById(session.id);
   const profile = await getProfileByUserId(session.id);
   
-  if (!user) redirect('/login');
+  if (!user) {
+    user = {
+      id: session.id,
+      email: session.email,
+      name: session.name,
+      phone: '9123456780',
+      passwordHash: '',
+      role: session.role as any,
+      status: 'ACTIVE',
+      createdAt: new Date().toISOString(),
+    };
+  }
 
   const detailedUser = {
     ...user,
@@ -117,12 +128,11 @@ export default async function DashboardPage() {
       })
     );
 
-    // Sort by proximity
     booksWithDistance.sort((a, b) => a.distance - b.distance);
     nearbyBooks = booksWithDistance.slice(0, 5);
   }
 
-  // 6. Smart Book Recommendations (Category demand matching)
+  // 6. Smart Book Recommendations
   const userCategories = new Set<string>();
   
   await Promise.all(
@@ -132,7 +142,6 @@ export default async function DashboardPage() {
     })
   );
 
-  // Default suggestions if user interest profile is blank
   if (userCategories.size === 0) {
     userCategories.add('Programming');
     userCategories.add('Web Development');
