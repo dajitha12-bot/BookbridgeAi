@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation';
 import { getUserByEmail, createUser, getUserById, updateUser, getProfileByUserId } from '../lib/db/users';
 import { createDeliveryStaff } from '../lib/db/deliveries';
 import { hashPassword, verifyPassword } from '../lib/auth/hash';
-import { createSession, deleteSession, getSession } from '../lib/auth/session';
+import { createSession, deleteSession, getSession, encrypt } from '../lib/auth/session';
 import { revalidatePath } from 'next/cache';
 
 // Helper to map city to coordinates
@@ -29,7 +29,6 @@ export async function getCityCoordinates(city: string): Promise<{ latitude: numb
  * Register Server Action
  */
 export async function registerAction(prevState: any, formData: FormData) {
-  let targetUrl = '/dashboard';
   try {
     const name = formData.get('name') as string;
     const email = formData.get('email') as string;
@@ -45,16 +44,16 @@ export async function registerAction(prevState: any, formData: FormData) {
       return { success: false, error: 'Name, email, and password are required.' };
     }
 
-    const existingUser = await getUserByEmail(email);
-    if (existingUser) {
+    let user = await getUserByEmail(email);
+
+    if (user) {
       // If user exists, log them in directly
       await createSession({
-        id: existingUser.id,
-        name: existingUser.name,
-        email: existingUser.email,
-        role: existingUser.role,
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
       });
-      targetUrl = existingUser.role === 'ADMIN' ? '/admin' : existingUser.role === 'DELIVERY_STAFF' ? '/staff' : '/dashboard';
     } else {
       // Hash password
       const pwdHash = hashPassword(password);
@@ -65,7 +64,7 @@ export async function registerAction(prevState: any, formData: FormData) {
       // Determine role
       const role = roleInput.toUpperCase() as any;
 
-      const newUser = await createUser(
+      user = await createUser(
         {
           email,
           name,
@@ -86,7 +85,7 @@ export async function registerAction(prevState: any, formData: FormData) {
       // If registering as delivery staff, log staff attributes
       if (role === 'DELIVERY_STAFF') {
         await createDeliveryStaff({
-          userId: newUser.id,
+          userId: user.id,
           name,
           phone,
           city,
@@ -100,31 +99,28 @@ export async function registerAction(prevState: any, formData: FormData) {
 
       // Create session cookie
       await createSession({
-        id: newUser.id,
-        name: newUser.name,
-        email: newUser.email,
-        role: newUser.role,
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
       });
+    }
 
-      targetUrl = newUser.role === 'ADMIN' ? '/admin' : newUser.role === 'DELIVERY_STAFF' ? '/staff' : '/dashboard';
-    }
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+    const token = encrypt(JSON.stringify({ id: user.id, name: user.name, email: user.email, role: user.role, expiresAt }));
+    const redirectUrl = user.role === 'ADMIN' ? '/admin' : user.role === 'DELIVERY_STAFF' ? '/staff' : '/dashboard';
+
+    return { success: true, role: user.role, token, redirectUrl };
   } catch (error: any) {
-    if (error?.digest?.startsWith('NEXT_REDIRECT') || error?.message?.includes('NEXT_REDIRECT')) {
-      throw error;
-    }
     console.error('Registration error:', error);
     return { success: false, error: error.message || 'Something went wrong during registration.' };
   }
-
-  // Native server redirect
-  redirect(targetUrl);
 }
 
 /**
  * Login Server Action
  */
 export async function loginAction(prevState: any, formData: FormData) {
-  let targetUrl = '/dashboard';
   try {
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
@@ -174,17 +170,15 @@ export async function loginAction(prevState: any, formData: FormData) {
       role: user.role,
     });
 
-    targetUrl = user.role === 'ADMIN' ? '/admin' : user.role === 'DELIVERY_STAFF' ? '/staff' : '/dashboard';
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+    const token = encrypt(JSON.stringify({ id: user.id, name: user.name, email: user.email, role: user.role, expiresAt }));
+    const redirectUrl = user.role === 'ADMIN' ? '/admin' : user.role === 'DELIVERY_STAFF' ? '/staff' : '/dashboard';
+
+    return { success: true, role: user.role, token, redirectUrl };
   } catch (error: any) {
-    if (error?.digest?.startsWith('NEXT_REDIRECT') || error?.message?.includes('NEXT_REDIRECT')) {
-      throw error;
-    }
     console.error('Login error:', error);
     return { success: false, error: 'An unexpected error occurred during login.' };
   }
-
-  // Native server redirect
-  redirect(targetUrl);
 }
 
 /**
@@ -192,7 +186,7 @@ export async function loginAction(prevState: any, formData: FormData) {
  */
 export async function logoutAction() {
   await deleteSession();
-  redirect('/');
+  return { success: true };
 }
 
 /**

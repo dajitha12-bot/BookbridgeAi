@@ -34,12 +34,16 @@ function LoginFormContent() {
       formData.set('password', password);
       formData.set('role', targetRole.toUpperCase());
 
-      // Trigger server action to establish session
-      await loginAction(null, formData);
+      const res = await loginAction(null, formData);
+
+      if (res && res.token) {
+        // Set document cookie directly on client to guarantee Vercel HTTP request header presence
+        document.cookie = `session_token=${res.token}; path=/; max-age=604800; SameSite=Lax;`;
+      }
     } catch (err: any) {
-      // Ignore NEXT_REDIRECT signals from server
+      console.error('Login action:', err);
     } finally {
-      // Immediately navigate to target workspace dashboard
+      // Perform immediate location navigation to target workspace
       window.location.href = targetUrl;
     }
   };
