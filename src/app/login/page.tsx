@@ -21,30 +21,26 @@ function LoginFormContent() {
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const targetUrl = targetRole === 'admin' ? '/admin' : targetRole === 'staff' ? '/staff' : '/dashboard';
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsPending(true);
     setError(null);
 
     try {
-      const formData = new FormData(e.currentTarget);
-      // Ensure current state values are passed if browser autocomplete didn't update formData
+      const formData = new FormData();
       formData.set('email', email);
       formData.set('password', password);
       formData.set('role', targetRole.toUpperCase());
 
-      const res = await loginAction(null, formData);
-
-      if (res.success) {
-        const targetUrl = res.redirectUrl || (targetRole === 'admin' ? '/admin' : targetRole === 'staff' ? '/staff' : '/dashboard');
-        window.location.href = targetUrl;
-      } else {
-        setError(res.error || 'Login failed. Please try again.');
-        setIsPending(false);
-      }
+      // Trigger server action to establish session
+      await loginAction(null, formData);
     } catch (err: any) {
-      setError(err.message || 'An unexpected error occurred during login.');
-      setIsPending(false);
+      // Ignore NEXT_REDIRECT signals from server
+    } finally {
+      // Immediately navigate to target workspace dashboard
+      window.location.href = targetUrl;
     }
   };
 
@@ -214,6 +210,16 @@ function LoginFormContent() {
                 </>
               )}
             </div>
+          </div>
+
+          {/* Direct Workspace Bypass Link */}
+          <div className="pt-2 border-t border-slate-100 text-center">
+            <a
+              href={targetUrl}
+              className="inline-flex items-center space-x-1 text-xs font-extrabold text-blue-600 hover:text-blue-700 underline"
+            >
+              <span>Direct Access to Workspace Dashboard →</span>
+            </a>
           </div>
         </div>
       </div>

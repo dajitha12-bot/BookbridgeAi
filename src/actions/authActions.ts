@@ -1,5 +1,6 @@
 'use server';
 
+import { redirect } from 'next/navigation';
 import { getUserByEmail, createUser, getUserById, updateUser, getProfileByUserId } from '../lib/db/users';
 import { createDeliveryStaff } from '../lib/db/deliveries';
 import { hashPassword, verifyPassword } from '../lib/auth/hash';
@@ -28,6 +29,7 @@ export async function getCityCoordinates(city: string): Promise<{ latitude: numb
  * Register Server Action
  */
 export async function registerAction(prevState: any, formData: FormData) {
+  let targetUrl = '/dashboard';
   try {
     const name = formData.get('name') as string;
     const email = formData.get('email') as string;
@@ -52,72 +54,77 @@ export async function registerAction(prevState: any, formData: FormData) {
         email: existingUser.email,
         role: existingUser.role,
       });
-      const redirectUrl = existingUser.role === 'ADMIN' ? '/admin' : existingUser.role === 'DELIVERY_STAFF' ? '/staff' : '/dashboard';
-      return { success: true, role: existingUser.role, redirectUrl };
-    }
+      targetUrl = existingUser.role === 'ADMIN' ? '/admin' : existingUser.role === 'DELIVERY_STAFF' ? '/staff' : '/dashboard';
+    } else {
+      // Hash password
+      const pwdHash = hashPassword(password);
 
-    // Hash password
-    const pwdHash = hashPassword(password);
+      // Map coordinates
+      const coords = await getCityCoordinates(city);
 
-    // Map coordinates
-    const coords = await getCityCoordinates(city);
+      // Determine role
+      const role = roleInput.toUpperCase() as any;
 
-    // Determine role
-    const role = roleInput.toUpperCase() as any;
+      const newUser = await createUser(
+        {
+          email,
+          name,
+          phone,
+          passwordHash: pwdHash,
+          role,
+        },
+        {
+          city,
+          area,
+          address,
+          pincode,
+          latitude: coords.latitude,
+          longitude: coords.longitude,
+        }
+      );
 
-    const newUser = await createUser(
-      {
-        email,
-        name,
-        phone,
-        passwordHash: pwdHash,
-        role,
-      },
-      {
-        city,
-        area,
-        address,
-        pincode,
-        latitude: coords.latitude,
-        longitude: coords.longitude,
+      // If registering as delivery staff, log staff attributes
+      if (role === 'DELIVERY_STAFF') {
+        await createDeliveryStaff({
+          userId: newUser.id,
+          name,
+          phone,
+          city,
+          area,
+          pincode,
+          serviceArea: `${area}, ${city}`,
+          availability: true,
+          activeDeliveries: 0,
+        });
       }
-    );
 
-    // If registering as delivery staff, log staff attributes
-    if (role === 'DELIVERY_STAFF') {
-      await createDeliveryStaff({
-        userId: newUser.id,
-        name,
-        phone,
-        city,
-        area,
-        pincode,
-        serviceArea: `${area}, ${city}`,
-        availability: true,
-        activeDeliveries: 0,
+      // Create session cookie
+      await createSession({
+        id: newUser.id,
+        name: newUser.name,
+        email: newUser.email,
+        role: newUser.role,
       });
+
+      targetUrl = newUser.role === 'ADMIN' ? '/admin' : newUser.role === 'DELIVERY_STAFF' ? '/staff' : '/dashboard';
     }
-
-    // Create session cookie
-    await createSession({
-      id: newUser.id,
-      name: newUser.name,
-      email: newUser.email,
-      role: newUser.role,
-    });
-
-    const redirectUrl = newUser.role === 'ADMIN' ? '/admin' : newUser.role === 'DELIVERY_STAFF' ? '/staff' : '/dashboard';
-    return { success: true, role: newUser.role, redirectUrl };
   } catch (error: any) {
+    if (error?.digest?.startsWith('NEXT_REDIRECT') || error?.message?.includes('NEXT_REDIRECT')) {
+      throw error;
+    }
     console.error('Registration error:', error);
     return { success: false, error: error.message || 'Something went wrong during registration.' };
   }
+
+  // Native server redirect
+  redirect(targetUrl);
 }
 
 /**
  * Login Server Action
  */
 export async function loginAction(prevState: any, formData: FormData) {
+  let targetUrl = '/dashboard';
   try {
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
@@ -167,12 +174,17 @@ export async function loginAction(prevState: any, formData: FormData) {
       role: user.role,
     });
 
-    const redirectUrl = user.role === 'ADMIN' ? '/admin' : user.role === 'DELIVERY_STAFF' ? '/staff' : '/dashboard';
-    return { success: true, role: user.role, redirectUrl };
+    targetUrl = user.role === 'ADMIN' ? '/admin' : user.role === 'DELIVERY_STAFF' ? '/staff' : '/dashboard';
   } catch (error: any) {
+    if (error?.digest?.startsWith('NEXT_REDIRECT') || error?.message?.includes('NEXT_REDIRECT')) {
+      throw error;
+    }
     console.error('Login error:', error);
     return { success: false, error: 'An unexpected error occurred during login.' };
   }
+
+  // Native server redirect
+  redirect(targetUrl);
 }
 
 /**
@@ -180,7 +192,7 @@ export async function loginAction(prevState: any, formData: FormData) {
  */
 export async function logoutAction() {
   await deleteSession();
-  return { success: true };
+  redirect('/');
 }
 
 /**
