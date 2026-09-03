@@ -7,7 +7,6 @@ export function mapConditionToScore(condition: string): number {
 }
 
 export function trainModel(): ModelMetadata {
-  // Train model asynchronously and return metadata
   trainTensorFlowModel().catch(() => {});
   return getTrainedMetadata();
 }
@@ -19,18 +18,15 @@ export function predictFairPrice(
   edition: number,
   category: string
 ) {
-  // Translate parameters: map conditionScore back to a standard string
   let cond = 'GOOD';
   if (conditionScore >= 4.5) cond = 'LIKE_NEW';
   else if (conditionScore >= 4.0) cond = 'VERY_GOOD';
   else if (conditionScore >= 3.0) cond = 'GOOD';
   else cond = 'FAIR';
 
-  // Purchase date calculation based on predicted age:
-  // CurrentYear - ageYears
   const currentYear = new Date().getFullYear();
   const purchaseYear = Math.max(1950, Math.round(currentYear - ageYears));
-  const purchaseDate = `${purchaseYear}-06-15`; // mid-year estimate
+  const purchaseDate = `${purchaseYear}-06-15`;
 
   const result = predictBookFairPrice(
     originalPrice,
@@ -47,4 +43,14 @@ export function predictFairPrice(
     explanations: result.explanations,
     meta: result.meta
   };
+}
+
+export function calculateFairPrice(
+  originalPrice: number,
+  ageYears: number,
+  conditionScore: number,
+  edition: number,
+  category: string
+) {
+  return predictFairPrice(originalPrice, ageYears, conditionScore, edition, category);
 }

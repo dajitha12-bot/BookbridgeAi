@@ -21,19 +21,9 @@
   },
   {
     "id": "usr-staff2",
-    "email": "karthik@delivery.com",
-    "name": "Karthik Raja",
+    "email": "staff@bookbridge.com",
+    "name": "Arun Kumar",
     "phone": "9876543211",
-    "passwordHash": "6068b38f09c2d3e37ce3db11c7eac6d1:1f48eea3f398ea7a026a91b01681ea67744e5bc964613afed98359f54cdfe9de44cb6708e98a19a60f36282bdada24b7f47061dae9889ac0f31e6e9176597e71",
-    "role": "DELIVERY_STAFF",
-    "status": "ACTIVE",
-    "createdAt": "2026-08-25T16:17:01.811Z"
-  },
-  {
-    "id": "usr-staff3",
-    "email": "suresh@delivery.com",
-    "name": "Suresh Kumar",
-    "phone": "9876543212",
     "passwordHash": "6068b38f09c2d3e37ce3db11c7eac6d1:1f48eea3f398ea7a026a91b01681ea67744e5bc964613afed98359f54cdfe9de44cb6708e98a19a60f36282bdada24b7f47061dae9889ac0f31e6e9176597e71",
     "role": "DELIVERY_STAFF",
     "status": "ACTIVE",
@@ -51,82 +41,12 @@
   },
   {
     "id": "usr-user2",
-    "email": "rahul@gmail.com",
+    "email": "user@bookbridge.com",
     "name": "Rahul Subramanian",
     "phone": "9123456781",
     "passwordHash": "6068b38f09c2d3e37ce3db11c7eac6d1:1f48eea3f398ea7a026a91b01681ea67744e5bc964613afed98359f54cdfe9de44cb6708e98a19a60f36282bdada24b7f47061dae9889ac0f31e6e9176597e71",
     "role": "USER",
     "status": "ACTIVE",
     "createdAt": "2026-08-25T16:17:01.811Z"
-  },
-  {
-    "id": "usr-user3",
-    "email": "priya@gmail.com",
-    "name": "Priya Dharshini",
-    "phone": "9123456782",
-    "passwordHash": "6068b38f09c2d3e37ce3db11c7eac6d1:1f48eea3f398ea7a026a91b01681ea67744e5bc964613afed98359f54cdfe9de44cb6708e98a19a60f36282bdada24b7f47061dae9889ac0f31e6e9176597e71",
-    "role": "USER",
-    "status": "ACTIVE",
-    "createdAt": "2026-08-25T16:17:01.811Z"
-  },
-  {
-    "id": "usr-user4",
-    "email": "vignesh@gmail.com",
-    "name": "Vignesh Balaji",
-    "phone": "9123456783",
-    "passwordHash": "6068b38f09c2d3e37ce3db11c7eac6d1:1f48eea3f398ea7a026a91b01681ea67744e5bc964613afed98359f54cdfe9de44cb6708e98a19a60f36282bdada24b7f47061dae9889ac0f31e6e9176597e71",
-    "role": "USER",
-    "status": "ACTIVE",
-    "createdAt": "2026-08-25T16:17:01.811Z"
-  },
-  {
-    "id": "usr-user5",
-    "email": "meena@gmail.com",
-    "name": "Meenakshi Sundaram",
-    "phone": "9123456784",
-    "passwordHash": "6068b38f09c2d3e37ce3db11c7eac6d1:1f48eea3f398ea7a026a91b01681ea67744e5bc964613afed98359f54cdfe9de44cb6708e98a19a60f36282bdada24b7f47061dae9889ac0f31e6e9176597e71",
-    "role": "USER",
-    "status": "ACTIVE",
-    "createdAt": "2026-08-25T16:17:01.811Z"
-  },
-  {
-    "id": "usr-user6",
-    "email": "srinivasan@gmail.com",
-    "name": "Srinivasan Raman",
-    "phone": "9123456785",
-    "passwordHash": "6068b38f09c2d3e37ce3db11c7eac6d1:1f48eea3f398ea7a026a91b01681ea67744e5bc964613afed98359f54cdfe9de44cb6708e98a19a60f36282bdada24b7f47061dae9889ac0f31e6e9176597e71",
-    "role": "USER",
-    "status": "ACTIVE",
-    "createdAt": "2026-08-25T16:17:01.811Z"
-  },
-  {
-    "id": "usr-user7",
-    "email": "swetha@gmail.com",
-    "name": "Swetha Ram",
-    "phone": "9123456786",
-    "passwordHash": "6068b38f09c2d3e37ce3db11c7eac6d1:1f48eea3f398ea7a026a91b01681ea67744e5bc964613afed98359f54cdfe9de44cb6708e98a19a60f36282bdada24b7f47061dae9889ac0f31e6e9176597e71",
-    "role": "USER",
-    "status": "ACTIVE",
-    "createdAt": "2026-08-25T16:17:01.811Z"
-  },
-  {
-    "email": "24205047@nec.edu.in",
-    "name": "Ajitha",
-    "phone": "1234567890",
-    "passwordHash": "3028c86be6b4c564e66cd679066539ac:3aa3d17b9bc352259f29b7aee4a01719aba427882da6f70f0a909df9e1d2ce9d63e16c4caaaf102ec435b409233eafeebddb6a9323db79cd23a7286565dd4a39",
-    "role": "USER",
-    "id": "dfhw217lp",
-    "status": "ACTIVE",
-    "createdAt": "2026-08-28T02:01:38.933Z"
-  },
-  {
-    "email": "dajitha12@gmail.com",
-    "name": "Ajitha D R",
-    "phone": "06374784776",
-    "passwordHash": "c751b1847f86bea62289913810024e37:a725fbb19bfd251358a5c7fd4afb80e0836359a15ca67ecb64294886a1856c92a6a51a63980f0079bf74478e54b1bed8fcea592dccc0c7fc41a5e212d23edcca",
-    "role": "USER",
-    "id": "nlkcoogee",
-    "status": "ACTIVE",
-    "createdAt": "2026-09-02T04:02:00.419Z"
   }
 ]
