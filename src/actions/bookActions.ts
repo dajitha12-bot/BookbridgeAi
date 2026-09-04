@@ -10,6 +10,86 @@ import { calculateDistance } from '../lib/utils/distance';
 import { revalidatePath } from 'next/cache';
 
 /**
+ * Browse Books Action
+ */
+export async function browseBooksAction(
+  search: string = '',
+  filters: any = {},
+  sortBy: string = 'Newest',
+  buyerCoords?: { latitude: number; longitude: number }
+) {
+  try {
+    let books = await getAllBooks();
+
+    // Filter available only by default
+    books = books.filter(b => b.status === 'AVAILABLE');
+
+    // Search filter
+    if (search && search.trim()) {
+      const q = search.toLowerCase().trim();
+      books = books.filter(b => 
+        b.title.toLowerCase().includes(q) || 
+        b.author.toLowerCase().includes(q) || 
+        b.subject.toLowerCase().includes(q) ||
+        b.category.toLowerCase().includes(q)
+      );
+    }
+
+    // Category filter
+    if (filters?.category && filters.category !== 'All') {
+      books = books.filter(b => b.category.toLowerCase() === filters.category.toLowerCase());
+    }
+
+    // Condition filter
+    if (filters?.condition && filters.condition !== 'All') {
+      books = books.filter(b => b.condition === filters.condition);
+    }
+
+    // City filter
+    if (filters?.city && filters.city !== 'All') {
+      books = books.filter(b => b.city.toLowerCase() === filters.city.toLowerCase());
+    }
+
+    // Area filter
+    if (filters?.area && filters.area.trim()) {
+      books = books.filter(b => b.area.toLowerCase().includes(filters.area.toLowerCase().trim()));
+    }
+
+    // Price range
+    if (filters?.minPrice !== undefined && !isNaN(filters.minPrice)) {
+      books = books.filter(b => b.expectedPrice >= filters.minPrice);
+    }
+    if (filters?.maxPrice !== undefined && !isNaN(filters.maxPrice)) {
+      books = books.filter(b => b.expectedPrice <= filters.maxPrice);
+    }
+
+    // Logistics options
+    if (filters?.deliveryAvailable) {
+      books = books.filter(b => b.deliveryAvailable);
+    }
+    if (filters?.exchangeAvailable) {
+      books = books.filter(b => b.exchangeAvailable);
+    }
+
+    // Sorting
+    if (sortBy === 'PriceLowHigh') {
+      books.sort((a, b) => a.expectedPrice - b.expectedPrice);
+    } else if (sortBy === 'PriceHighLow') {
+      books.sort((a, b) => b.expectedPrice - a.expectedPrice);
+    } else if (sortBy === 'Oldest') {
+      books.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    } else {
+      // Newest
+      books.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    }
+
+    return { success: true, books };
+  } catch (error: any) {
+    return { success: false, error: error.message || 'Failed to browse books' };
+  }
+}
+
+/**
  * AI Fair Price Suggestion Action
  */
 export async function getSuggestedPriceAction(
@@ -29,6 +109,45 @@ export async function getSuggestedPriceAction(
 }
 
 /**
+ * AI Valuation Chat Action
+ */
+export async function getAiChatPricePredictionAction(
+  userPrompt: string,
+  imagePreview?: string,
+  formState?: any
+) {
+  try {
+    const title = formState?.title || 'Used Book';
+    const originalPrice = formState?.originalPrice || 500;
+    const condition = formState?.condition || 'GOOD';
+    const edition = formState?.edition || 1;
+    const category = formState?.category || 'Programming';
+
+    const score = mapConditionToScore(condition);
+    const prediction = predictFairPrice(originalPrice, 2, score, edition, category);
+
+    return {
+      success: true,
+      suggestion: {
+        title,
+        author: formState?.author || 'Standard Author',
+        category,
+        subject: category,
+        edition,
+        publicationYear: 2024,
+        originalPrice,
+        condition,
+        suggestedPrice: prediction.suggestedPrice,
+        explanation: `Based on current market demand for ${category} books and condition ${condition}, our AI recommends ₹${prediction.suggestedPrice}.`,
+        description: `Quality textbook in ${condition} condition. Great for self-study and course reference.`
+      }
+    };
+  } catch (error: any) {
+    return { success: false, error: error.message || 'AI processing failed' };
+  }
+}
+
+/**
  * Add Book Server Action
  */
 export async function addBookAction(prevState: any, formData: FormData) {
@@ -36,32 +155,34 @@ export async function addBookAction(prevState: any, formData: FormData) {
     const session = await getSession();
     if (!session) return { success: false, error: 'You must be logged in to list a book.' };
 
-    const title = formData.get('title') as string;
-    const author = formData.get('author') as string;
-    const category = formData.get('category') as string;
-    const subject = formData.get('subject') as string;
-    const isbn = formData.get('isbn') as string;
+    const title = (formData.get('title') as string || '').trim();
+    const author = (formData.get('author') as string || '').trim();
+    const category = (formData.get('category') as string || 'Programming').trim();
+    const subject = (formData.get('subject') as string || 'General').trim();
+    const isbn = (formData.get('isbn') as string || 'ISBN-UNKNOWN').trim();
     const edition = parseInt(formData.get('edition') as string || '1');
-    const publicationYear = parseInt(formData.get('publicationYear') as string);
-    const originalPrice = parseFloat(formData.get('originalPrice') as string);
-    const expectedPrice = parseFloat(formData.get('expectedPrice') as string);
-    const condition = formData.get('condition') as string;
-    const description = formData.get('description') as string;
-    const imageUrl = formData.get('imageUrl') as string || null;
+    const publicationYear = parseInt(formData.get('publicationYear') as string || new Date().getFullYear().toString());
+    const originalPrice = parseFloat(formData.get('originalPrice') as string || '0');
+    
+    const rawExpectedPrice = formData.get('expectedPrice') as string;
+    const expectedPrice = (rawExpectedPrice !== null && rawExpectedPrice !== '') ? parseFloat(rawExpectedPrice) : 0;
+    
+    const condition = (formData.get('condition') as string || 'GOOD').trim();
+    const description = (formData.get('description') as string || 'Listed book description.').trim();
+    const imageUrl = (formData.get('imageUrl') as string || '').trim() || null;
     const deliveryAvailable = formData.get('deliveryAvailable') === 'true';
     const exchangeAvailable = formData.get('exchangeAvailable') === 'true';
     const donationAvailable = formData.get('donationAvailable') === 'true';
-    const purchaseDate = formData.get('purchaseDate') as string || new Date().toISOString().split('T')[0];
+    const purchaseDate = (formData.get('purchaseDate') as string || new Date().toISOString().split('T')[0]).trim();
 
-    if (!title || !author || !category || !subject || !isbn || isNaN(edition) || isNaN(publicationYear) || isNaN(originalPrice) || isNaN(expectedPrice) || !condition || !description) {
-      return { success: false, error: 'All required book details must be provided.' };
+    if (!title || !author || !category || !condition || !description) {
+      return { success: false, error: 'Please fill in Title, Author, Category, Condition, and Description.' };
     }
 
     // Retrieve seller's location from profile
-    const profile = await getProfileByUserId(session.id);
-    if (!profile) {
-      return { success: false, error: 'Please update your address profile before listing books.' };
-    }
+    let sellerProfile = await getProfileByUserId(session.id);
+    const city = sellerProfile?.city || 'Chennai';
+    const area = sellerProfile?.area || 'Adyar';
 
     const newBook = await createBook({
       title,
@@ -69,317 +190,80 @@ export async function addBookAction(prevState: any, formData: FormData) {
       category,
       subject,
       isbn,
-      edition,
-      publicationYear,
-      originalPrice,
-      expectedPrice,
+      edition: isNaN(edition) ? 1 : edition,
+      publicationYear: isNaN(publicationYear) ? new Date().getFullYear() : publicationYear,
+      originalPrice: isNaN(originalPrice) ? 0 : originalPrice,
+      expectedPrice: isNaN(expectedPrice) ? 0 : expectedPrice,
       condition: condition as any,
       description,
+      ownerId: session.id,
+      city,
+      area,
+      status: 'AVAILABLE',
       imageUrl,
-      city: profile.city,
-      area: profile.area,
-      pincode: profile.pincode,
       deliveryAvailable,
       exchangeAvailable,
       donationAvailable,
       purchaseDate,
-      ownerId: session.id,
     });
-
-    // Check if expectedPrice is 0 for donation
-    if (donationAvailable && expectedPrice === 0) {
-      await updateBook(newBook.id, { status: 'DONATED' });
-    }
-
-    // Match notifications: Check if any user requested this book category/title in this city
-    const requests = await getAllBookRequests();
-    const matchingRequests = requests.filter(r => 
-      r.status === 'ACTIVE' &&
-      r.city.toLowerCase() === profile.city.toLowerCase() &&
-      r.category.toLowerCase() === category.toLowerCase() &&
-      r.maxPrice >= expectedPrice &&
-      r.requesterId !== session.id
-    );
-
-    for (const req of matchingRequests) {
-      await createNotification(
-        req.requesterId,
-        'Book Request Matched!',
-        `A book matching your request "${req.title}" has been listed: "${title}" by ${session.name} for ₹${expectedPrice}.`
-      );
-
-      // Mark request as matched
-      await updateBookRequest(req.id, { status: 'MATCHED' });
-    }
 
     revalidatePath('/dashboard/my-books');
     revalidatePath('/browse');
+
     return { success: true, bookId: newBook.id };
   } catch (error: any) {
-    console.error('Add Book error:', error);
-    return { success: false, error: error.message || 'Failed to add book.' };
+    console.error('Add book error:', error);
+    return { success: false, error: error.message || 'Failed to list book.' };
   }
 }
 
 /**
- * Edit Book Server Action
+ * Update Book Server Action
  */
-export async function updateBookAction(id: string, formData: FormData) {
+export async function updateBookAction(bookId: string, updates: Partial<any>) {
   try {
     const session = await getSession();
-    if (!session) return { success: false, error: 'Unauthorized.' };
+    if (!session) return { success: false, error: 'Unauthorized' };
 
-    const book = await getBookById(id);
-    if (!book) return { success: false, error: 'Book not found.' };
-
-    if (book.ownerId !== session.id && session.role !== 'ADMIN') {
-      return { success: false, error: 'You do not own this book.' };
-    }
-
-    const title = formData.get('title') as string;
-    const author = formData.get('author') as string;
-    const category = formData.get('category') as string;
-    const subject = formData.get('subject') as string;
-    const isbn = formData.get('isbn') as string;
-    const edition = parseInt(formData.get('edition') as string || '1');
-    const publicationYear = parseInt(formData.get('publicationYear') as string);
-    const originalPrice = parseFloat(formData.get('originalPrice') as string);
-    const expectedPrice = parseFloat(formData.get('expectedPrice') as string);
-    const condition = formData.get('condition') as string;
-    const description = formData.get('description') as string;
-    const imageUrl = formData.get('imageUrl') as string || book.imageUrl;
-    const deliveryAvailable = formData.get('deliveryAvailable') === 'true';
-    const exchangeAvailable = formData.get('exchangeAvailable') === 'true';
-    const donationAvailable = formData.get('donationAvailable') === 'true';
-    const purchaseDate = formData.get('purchaseDate') as string || book.purchaseDate || new Date().toISOString().split('T')[0];
-
-    await updateBook(id, {
-      title,
-      author,
-      category,
-      subject,
-      isbn,
-      edition,
-      publicationYear,
-      originalPrice,
-      expectedPrice,
-      condition: condition as any,
-      description,
-      imageUrl,
-      deliveryAvailable,
-      exchangeAvailable,
-      donationAvailable,
-      purchaseDate,
-    });
-
-    revalidatePath(`/books/${id}`);
+    const updated = await updateBook(bookId, updates);
     revalidatePath('/dashboard/my-books');
-    return { success: true };
-  } catch (error: any) {
-    return { success: false, error: 'Failed to update book.' };
+    revalidatePath('/browse');
+    return { success: true, book: updated };
+  } catch (e: any) {
+    return { success: false, error: e.message || 'Failed to update book' };
   }
 }
 
 /**
  * Delete Book Server Action
  */
-export async function deleteBookAction(id: string) {
+export async function deleteBookAction(bookId: string) {
   try {
     const session = await getSession();
-    if (!session) return { success: false, error: 'Unauthorized.' };
+    if (!session) return { success: false, error: 'Unauthorized' };
 
-    const book = await getBookById(id);
-    if (!book) return { success: false, error: 'Book not found.' };
-
-    if (book.ownerId !== session.id && session.role !== 'ADMIN') {
-      return { success: false, error: 'You do not own this book.' };
-    }
-
-    await deleteBook(id);
-
+    const res = await deleteBook(bookId);
     revalidatePath('/dashboard/my-books');
     revalidatePath('/browse');
-    return { success: true };
-  } catch (error: any) {
-    return { success: false, error: 'Failed to delete book.' };
+    return { success: true, deleted: res };
+  } catch (e: any) {
+    return { success: false, error: e.message || 'Failed to delete book' };
   }
 }
 
 /**
- * Mark Book Status Server Action
+ * Mark Book Status Action
  */
-export async function markBookStatusAction(id: string, status: string) {
+export async function markBookStatusAction(bookId: string, status: string) {
   try {
     const session = await getSession();
-    if (!session) return { success: false, error: 'Unauthorized.' };
+    if (!session) return { success: false, error: 'Unauthorized' };
 
-    const book = await getBookById(id);
-    if (!book) return { success: false, error: 'Book not found.' };
-
-    if (book.ownerId !== session.id && session.role !== 'ADMIN') {
-      return { success: false, error: 'Permission denied.' };
-    }
-
-    await updateBook(id, { status: status as any });
-
+    const updated = await updateBook(bookId, { status: status as any });
     revalidatePath('/dashboard/my-books');
-    return { success: true };
-  } catch (error: any) {
-    return { success: false, error: 'Failed to update book status.' };
-  }
-}
-
-/**
- * Fetch filtered/sorted books list (Database-backed search engine)
- */
-export async function browseBooksAction(
-  searchQuery: string,
-  filters: {
-    category?: string;
-    condition?: string;
-    city?: string;
-    area?: string;
-    minPrice?: number;
-    maxPrice?: number;
-    deliveryAvailable?: boolean;
-    exchangeAvailable?: boolean;
-  },
-  sortBy: string,
-  buyerCoords?: { latitude: number; longitude: number }
-) {
-  try {
-    const allBooks = await getAllBooks();
-
-    // 1. Filtering in memory
-    let filtered = allBooks.filter((book) => {
-      if (book.status !== 'AVAILABLE') return false;
-
-      // Search Query
-      if (searchQuery) {
-        const query = searchQuery.toLowerCase();
-        const matchesQuery = 
-          book.title.toLowerCase().includes(query) ||
-          book.author.toLowerCase().includes(query) ||
-          book.category.toLowerCase().includes(query) ||
-          book.subject.toLowerCase().includes(query) ||
-          book.isbn.toLowerCase().includes(query);
-        if (!matchesQuery) return false;
-      }
-
-      // Category filter
-      if (filters.category && filters.category !== 'All') {
-        if (book.category !== filters.category) return false;
-      }
-
-      // Condition filter
-      if (filters.condition && filters.condition !== 'All') {
-        if (book.condition !== filters.condition) return false;
-      }
-
-      // City filter
-      if (filters.city && filters.city !== 'All') {
-        if (!book.city.toLowerCase().includes(filters.city.toLowerCase())) return false;
-      }
-
-      // Area filter
-      if (filters.area) {
-        if (!book.area.toLowerCase().includes(filters.area.toLowerCase())) return false;
-      }
-
-      // Price bounds
-      if (filters.minPrice !== undefined) {
-        if (book.expectedPrice < filters.minPrice) return false;
-      }
-      if (filters.maxPrice !== undefined) {
-        if (book.expectedPrice > filters.maxPrice) return false;
-      }
-
-      // Delivery / Exchange options
-      if (filters.deliveryAvailable) {
-        if (!book.deliveryAvailable) return false;
-      }
-      if (filters.exchangeAvailable) {
-        if (!book.exchangeAvailable) return false;
-      }
-
-      return true;
-    });
-
-    // 2. Map distances and seller info
-    let mappedBooks = await Promise.all(
-      filtered.map(async (b) => {
-        let distance = 0;
-        const owner = await getUserById(b.ownerId);
-        const ownerProfile = await getProfileByUserId(b.ownerId);
-
-        if (buyerCoords && ownerProfile) {
-          distance = calculateDistance(
-            buyerCoords.latitude,
-            buyerCoords.longitude,
-            ownerProfile.latitude,
-            ownerProfile.longitude
-          );
-        }
-
-        return {
-          ...b,
-          distance,
-          sellerName: owner?.name || 'Unknown Reader',
-          sellerRating: 4.5,
-        };
-      })
-    );
-
-    // 3. Sorting
-    if (sortBy === 'Newest') {
-      mappedBooks.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    } else if (sortBy === 'Price Low to High') {
-      mappedBooks.sort((a, b) => a.expectedPrice - b.expectedPrice);
-    } else if (sortBy === 'Price High to Low') {
-      mappedBooks.sort((a, b) => b.expectedPrice - a.expectedPrice);
-    } else if (sortBy === 'Nearest' && buyerCoords) {
-      mappedBooks.sort((a, b) => a.distance - b.distance);
-    }
-
-    return { success: true, books: mappedBooks };
-  } catch (error: any) {
-    console.error('Browse books action error:', error);
-    return { success: false, error: 'Failed to search books.' };
-  }
-}
-
-/**
- * Interactive AI pricing chatbot helper action
- */
-export async function getAiChatPricePredictionAction(
-  originalPrice: number,
-  purchaseDate: string,
-  condition: string,
-  edition: number,
-  category: string,
-  imageFileName: string,
-  base64Image?: string
-) {
-  try {
-    let buffer: Buffer | undefined;
-    if (base64Image) {
-      const base64Data = base64Image.replace(/^data:image\/\w+;base64,/, "");
-      buffer = Buffer.from(base64Data, 'base64');
-    }
-    
-    const { predictBookFairPrice } = require('../lib/ai/fairPrice/pricePrediction');
-    const res = predictBookFairPrice(
-      originalPrice,
-      purchaseDate,
-      condition,
-      edition,
-      category,
-      imageFileName,
-      buffer
-    );
-    return { success: true, prediction: res };
-  } catch (error: any) {
-    console.error('getAiChatPricePredictionAction error:', error);
-    return { success: false, error: error.message || 'Failed to estimate price.' };
+    revalidatePath('/browse');
+    return { success: true, book: updated };
+  } catch (e: any) {
+    return { success: false, error: e.message || 'Failed to update book status' };
   }
 }

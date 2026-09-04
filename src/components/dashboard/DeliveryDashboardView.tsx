@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { 
   ClipboardList, 
   MapPin, 
@@ -9,7 +10,8 @@ import {
   Truck, 
   CheckCircle,
   Clock,
-  Navigation
+  Navigation,
+  UserPlus
 } from 'lucide-react';
 import { updateDeliveryStatusAction } from '../../actions/orderActions';
 
@@ -56,13 +58,20 @@ export default function DeliveryDashboardView({
           <h1 className="text-2xl font-bold">Delivery Dashboard</h1>
           <p className="text-sm text-slate-500 mt-1">Hello, {staff?.name || 'Partner'}. Here is your delivery load for today.</p>
         </div>
-        <div className="flex space-x-2">
+        <div className="flex flex-wrap items-center gap-2">
           <span className={`px-3 py-1.5 rounded-lg text-xs font-bold ${staff?.availability ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-rose-50 text-rose-600 border border-rose-100'}`}>
             {staff?.availability ? '● Available for tasks' : '○ Offline'}
           </span>
           <span className="px-3 py-1.5 rounded-lg text-xs font-bold bg-sky-50 text-sky-600 border border-sky-100">
             Workload: {staff?.activeDeliveries || 0} active
           </span>
+          <Link
+            href="/register?role=staff"
+            className="px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white transition-colors flex items-center space-x-1 shadow-xs"
+          >
+            <UserPlus className="w-3.5 h-3.5" />
+            <span>+ Register New Staff</span>
+          </Link>
         </div>
       </div>
 
