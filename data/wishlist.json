@@ -1,1 +1,20 @@
-[]
+[
+  {
+    "id": "wish-1",
+    "userId": "usr-user1",
+    "bookId": "bk-2",
+    "createdAt": "2026-08-28T10:00:00.000Z"
+  },
+  {
+    "id": "wish-2",
+    "userId": "usr-user1",
+    "bookId": "bk-3",
+    "createdAt": "2026-08-29T14:30:00.000Z"
+  },
+  {
+    "id": "wish-3",
+    "userId": "usr-user1",
+    "bookId": "bk-6",
+    "createdAt": "2026-08-30T11:15:00.000Z"
+  }
+]

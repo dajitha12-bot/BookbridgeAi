@@ -1,28 +1,20 @@
 [
   {
-    "id": "don_req_mteresa",
-    "institutionName": "Mother Teresa Trust",
-    "regNumber": "TRUST/2021/CHN-481",
-    "title": "Introduction to Algorithms",
-    "category": "Programming",
-    "quantityNeeded": 5,
-    "description": "Seeking core computer science textbooks for our community computer center library serving underprivileged youth.",
-    "city": "Chennai",
-    "contactPhone": "9845012345",
-    "status": "PENDING",
-    "createdAt": "2026-08-20T10:00:00Z"
+    "id": "don-1",
+    "bookId": "bk-8",
+    "donorId": "usr-user2",
+    "requesterId": "usr-user1",
+    "purpose": "Need this textbook for my college exam preparation.",
+    "status": "APPROVED",
+    "createdAt": "2026-08-29T10:00:00.000Z"
   },
   {
-    "id": "don_req_vidya",
-    "institutionName": "Vidya Foundation School",
-    "regNumber": "TRUST/2019/CBE-902",
-    "title": "Algebra and Calculus Basics",
-    "category": "Mathematics",
-    "quantityNeeded": 10,
-    "description": "Donations requested for standard high school reference mathematics texts to support rural tutorial centers.",
-    "city": "Coimbatore",
-    "contactPhone": "9123456780",
+    "id": "don-2",
+    "bookId": "bk-9",
+    "donorId": "usr-user3",
+    "requesterId": "usr-user1",
+    "purpose": "Requesting novel for community reading club.",
     "status": "PENDING",
-    "createdAt": "2026-08-22T14:30:00Z"
+    "createdAt": "2026-09-02T14:10:00.000Z"
   }
 ]

@@ -4,21 +4,39 @@
     "orderId": "ord-1",
     "staffId": "usr-staff1",
     "status": "IN_TRANSIT",
-    "updatedAt": "2026-08-25T16:17:01.812Z",
-    "notes": "Out of transit hub Guindy."
+    "updatedAt": "2026-09-02T10:15:00.000Z",
+    "notes": "Picked up from Adyar seller hub. In transit to Mylapore buyer.",
+    "pickupAddress": "10, Kasturiba Nagar, Adyar, Chennai - 600020",
+    "deliveryAddress": "14, Luz Church Road, Mylapore, Chennai - 600004"
   },
   {
-    "orderId": "umpz4s0et",
-    "staffId": "",
-    "status": "PENDING",
-    "id": "1o8ut44sx",
-    "updatedAt": "2026-08-28T02:04:15.529Z"
+    "id": "del-2",
+    "orderId": "ord-2",
+    "staffId": "usr-staff1",
+    "status": "ASSIGNED",
+    "updatedAt": "2026-09-03T14:20:00.000Z",
+    "notes": "Assigned for book parcel pickup.",
+    "pickupAddress": "8, Bypass Road, Velachery, Chennai - 600042",
+    "deliveryAddress": "10, Kasturiba Nagar, Adyar, Chennai - 600020"
   },
   {
-    "orderId": "7aptfvn16",
+    "id": "del-3",
+    "orderId": "ord-3",
     "staffId": "",
     "status": "PENDING",
-    "id": "fvaq8uoe2",
-    "updatedAt": "2026-09-02T04:06:37.528Z"
+    "updatedAt": "2026-09-04T08:00:00.000Z",
+    "notes": "Exchange home delivery unassigned.",
+    "pickupAddress": "45, Mount Road, Guindy, Chennai - 600032",
+    "deliveryAddress": "10, Kasturiba Nagar, Adyar, Chennai - 600020"
+  },
+  {
+    "id": "del-4",
+    "orderId": "ord-4",
+    "staffId": "",
+    "status": "PENDING",
+    "updatedAt": "2026-09-04T09:30:00.000Z",
+    "notes": "Rented book delivery unassigned.",
+    "pickupAddress": "12, College Road, Nungambakkam, Chennai - 600006",
+    "deliveryAddress": "10, Kasturiba Nagar, Adyar, Chennai - 600020"
   }
 ]

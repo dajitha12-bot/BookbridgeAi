@@ -32,7 +32,7 @@
   {
     "id": "usr-user1",
     "email": "ajitha@gmail.com",
-    "name": "Ajitha Priya",
+    "name": "Ajitha",
     "phone": "9123456780",
     "passwordHash": "6068b38f09c2d3e37ce3db11c7eac6d1:1f48eea3f398ea7a026a91b01681ea67744e5bc964613afed98359f54cdfe9de44cb6708e98a19a60f36282bdada24b7f47061dae9889ac0f31e6e9176597e71",
     "role": "USER",

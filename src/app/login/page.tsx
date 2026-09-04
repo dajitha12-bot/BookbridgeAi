@@ -32,7 +32,7 @@ function LoginFormContent() {
       const formData = new FormData();
       formData.set('email', email);
       formData.set('password', password);
-      formData.set('role', targetRole.toUpperCase());
+      formData.set('role', targetRole === 'staff' ? 'DELIVERY_STAFF' : targetRole.toUpperCase());
 
       const res = await loginAction(null, formData);
 
@@ -43,7 +43,6 @@ function LoginFormContent() {
     } catch (err: any) {
       console.error('Login action error:', err);
     } finally {
-      // 100ms micro-delay gives the browser DOM time to persist cookies before page location swap
       setTimeout(() => {
         window.location.replace(targetUrl);
       }, 100);
@@ -109,7 +108,7 @@ function LoginFormContent() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
-            <input type="hidden" name="role" value={targetRole.toUpperCase()} />
+            <input type="hidden" name="role" value={targetRole === 'staff' ? 'DELIVERY_STAFF' : targetRole.toUpperCase()} />
 
             <div className="space-y-1.5">
               <label htmlFor="email" className="text-xs font-bold text-slate-500 uppercase tracking-wider block">

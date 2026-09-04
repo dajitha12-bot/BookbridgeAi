@@ -3,6 +3,7 @@
 import { getSession } from '../lib/auth/session';
 import { createRental, getAllRentals } from '../lib/db/rentals';
 import { getBookById, updateBook } from '../lib/db/books';
+import { getProfileByUserId } from '../lib/db/users';
 import { createNotification } from '../lib/db/notifications';
 import { createOrder } from '../lib/db/orders';
 import { createPayment } from '../lib/db/payments';
@@ -10,12 +11,13 @@ import { createDelivery } from '../lib/db/deliveries';
 import { revalidatePath } from 'next/cache';
 
 /**
- * Rent a book for a specific duration
+ * Rent a book for a specific duration with handover selection (Home Delivery vs Offline Pickup)
  */
 export async function createRentalAction(
   bookId: string,
   durationDays: number,
-  paymentMethod: 'ONLINE' | 'COD'
+  paymentMethod: 'ONLINE' | 'COD',
+  deliveryMethod: 'DELIVERY' | 'PICKUP' = 'DELIVERY'
 ) {
   try {
     const session = await getSession();
@@ -46,16 +48,17 @@ export async function createRentalAction(
       paymentStatus: paymentMethod === 'ONLINE' ? 'PAID' : 'COD',
     });
 
-    // 3. Create placeholder Order record for dashboard lists
+    // 3. Create Order record
+    const orderStatus = deliveryMethod === 'PICKUP' ? 'READY_FOR_PICKUP' : 'PENDING';
     const order = await createOrder({
       buyerId: session.id,
       sellerId: book.ownerId,
       bookId: book.id,
       amount: rentalFee,
-      deliveryMethod: 'DELIVERY',
+      deliveryMethod,
       paymentStatus: paymentMethod === 'ONLINE' ? 'PAID' : 'COD',
-      orderStatus: 'PENDING',
-      pickupLocation: `Book Rental contract: ${durationDays} days`,
+      orderStatus: orderStatus as any,
+      pickupLocation: `Book Rental contract: ${durationDays} days (${deliveryMethod})`,
     });
 
     // 4. Create payment log
@@ -66,25 +69,34 @@ export async function createRentalAction(
       status: paymentMethod === 'ONLINE' ? 'PAID' : 'COD',
     });
 
-    // 5. Schedule delivery
-    await createDelivery({
-      orderId: order.id,
-      staffId: '',
-      status: 'PENDING',
-    });
+    // 5. Schedule delivery if Home Delivery chosen
+    if (deliveryMethod === 'DELIVERY') {
+      const buyerProfile = await getProfileByUserId(session.id);
+      const sellerProfile = await getProfileByUserId(book.ownerId);
 
-    // 6. Notify owner
+      const pickupAddress = sellerProfile ? `${sellerProfile.address}, ${sellerProfile.area}, ${sellerProfile.city} - ${sellerProfile.pincode}` : 'Seller Address, Chennai';
+      const deliveryAddress = buyerProfile ? `${buyerProfile.address}, ${buyerProfile.area}, ${buyerProfile.city} - ${buyerProfile.pincode}` : 'Renter Address, Chennai';
+
+      await createDelivery({
+        orderId: order.id,
+        staffId: '',
+        status: 'PENDING',
+        pickupAddress,
+        deliveryAddress,
+      });
+    }
+
+    // 6. Notify owner & renter
     await createNotification(
       book.ownerId,
       'Book Rented out!',
-      `Your book "${book.title}" has been rented out by ${session.name} for ${durationDays} days.`
+      `Your book "${book.title}" has been rented out by ${session.name} for ${durationDays} days (${deliveryMethod === 'DELIVERY' ? 'Home Delivery' : 'Self Pickup'}).`
     );
 
-    // 7. Notify renter
     await createNotification(
       session.id,
       'Rental confirmed!',
-      `You rented "${book.title}" for ${durationDays} days. Total fee: ₹${rentalFee}.`
+      `You rented "${book.title}" for ${durationDays} days. Handover mode: ${deliveryMethod === 'DELIVERY' ? 'Home Delivery' : 'Self Pickup'}.`
     );
 
     revalidatePath('/dashboard/rentals');
@@ -107,7 +119,6 @@ export async function getMyRentalsAction() {
     const list = await getAllRentals();
     const userRentals = list.filter(r => r.renterId === session.id || r.ownerId === session.id);
     
-    // Sort newest first
     userRentals.sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime());
     return { success: true, rentals: userRentals };
   } catch (error: any) {

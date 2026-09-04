@@ -1,1 +1,20 @@
-[]
+[
+  {
+    "id": "rev-1",
+    "bookId": "bk-1",
+    "reviewerId": "usr-user2",
+    "reviewerName": "Rahul Subramanian",
+    "rating": 5,
+    "comment": "Excellent condition book! Fast delivery via BookBridge staff.",
+    "createdAt": "2026-08-30T15:00:00.000Z"
+  },
+  {
+    "id": "rev-2",
+    "bookId": "bk-2",
+    "reviewerId": "usr-user1",
+    "reviewerName": "Ajitha",
+    "rating": 5,
+    "comment": "Great reference textbook for Machine Learning. Highly recommended seller!",
+    "createdAt": "2026-08-31T11:20:00.000Z"
+  }
+]

@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { Book } from '../../../../types';
 import { createRentalAction } from '../../../../actions/rentalActions';
 import { useRouter } from 'next/navigation';
-import { Calendar, CreditCard, Shield, Info, ArrowLeft, Truck, Check } from 'lucide-react';
+import { Calendar, CreditCard, Shield, Info, ArrowLeft, Truck, Check, MapPin } from 'lucide-react';
 import Link from 'next/link';
 
 interface RentBookClientProps {
@@ -15,6 +15,7 @@ export default function RentBookClient({ book }: RentBookClientProps) {
   const router = useRouter();
   
   const [duration, setDuration] = useState<number>(14);
+  const [deliveryMethod, setDeliveryMethod] = useState<'DELIVERY' | 'PICKUP'>('DELIVERY');
   const [paymentMethod, setPaymentMethod] = useState<'ONLINE' | 'COD'>('ONLINE');
   const [cardNumber, setCardNumber] = useState('');
   const [cardExpiry, setCardExpiry] = useState('');
@@ -43,7 +44,7 @@ export default function RentBookClient({ book }: RentBookClientProps) {
       }
     }
 
-    const res = await createRentalAction(book.id, duration, paymentMethod);
+    const res = await createRentalAction(book.id, duration, paymentMethod, deliveryMethod);
 
     if (res.success) {
       alert(`Rental requested successfully! Total amount: ₹${totalAmount}.`);
@@ -56,7 +57,7 @@ export default function RentBookClient({ book }: RentBookClientProps) {
   };
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6 animate-fade-in">
+    <div className="max-w-2xl mx-auto space-y-6 animate-fade-in text-slate-800 font-sans">
       {/* Back button */}
       <div>
         <Link
@@ -76,7 +77,7 @@ export default function RentBookClient({ book }: RentBookClientProps) {
             <span>Book Rental Center</span>
           </div>
           <h2 className="text-xl font-bold">Configure Rental Plan</h2>
-          <p className="text-xs text-slate-400 mt-1">Specify rental duration and finalize deposit payment</p>
+          <p className="text-xs text-slate-400 mt-1">Specify rental duration, delivery option, and finalize deposit payment</p>
         </div>
 
         <div className="p-6 md:p-8 space-y-6">
@@ -129,7 +130,51 @@ export default function RentBookClient({ book }: RentBookClientProps) {
               </div>
             </div>
 
-            {/* 2. Fee breakdown */}
+            {/* 2. Handover Method Choice */}
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
+                Handover Method
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setDeliveryMethod('DELIVERY')}
+                  className={`p-4 border rounded-xl font-bold text-xs text-left transition-all space-y-1 ${
+                    deliveryMethod === 'DELIVERY'
+                      ? 'border-blue-600 bg-blue-50/40 text-blue-700 shadow-xs'
+                      : 'border-slate-200 text-slate-600 bg-white'
+                  }`}
+                >
+                  <div className="flex items-center space-x-2">
+                    <Truck className="w-4 h-4 text-blue-600" />
+                    <span>Home Delivery (Assign Staff)</span>
+                  </div>
+                  <p className="text-[10px] text-slate-400 font-medium leading-relaxed">
+                    Assigned delivery staff picks up book parcel from owner and delivers to your address.
+                  </p>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setDeliveryMethod('PICKUP')}
+                  className={`p-4 border rounded-xl font-bold text-xs text-left transition-all space-y-1 ${
+                    deliveryMethod === 'PICKUP'
+                      ? 'border-blue-600 bg-blue-50/40 text-blue-700 shadow-xs'
+                      : 'border-slate-200 text-slate-600 bg-white'
+                  }`}
+                >
+                  <div className="flex items-center space-x-2">
+                    <MapPin className="w-4 h-4 text-blue-600" />
+                    <span>Self / Offline Pickup</span>
+                  </div>
+                  <p className="text-[10px] text-slate-400 font-medium leading-relaxed">
+                    Meet book owner directly at designated area in {book.city} for instant offline pickup.
+                  </p>
+                </button>
+              </div>
+            </div>
+
+            {/* 3. Fee breakdown */}
             <div className="bg-slate-50 border border-slate-100 p-4 rounded-xl space-y-3 font-sans">
               <div className="flex justify-between text-xs text-slate-500 font-medium">
                 <span>Base Service Fee</span>
@@ -150,12 +195,6 @@ export default function RentBookClient({ book }: RentBookClientProps) {
                 <span>Total Calculated Payment</span>
                 <span className="text-blue-600 text-base">₹{totalAmount}</span>
               </div>
-            </div>
-
-            {/* 3. Handover Notification */}
-            <div className="flex items-start space-x-2.5 text-[10px] text-slate-400 bg-blue-50/30 p-3 rounded-lg border border-blue-50/50 font-medium">
-              <Truck className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
-              <span>Couriers will deliver the book within 24-48 hours. The refundable deposit is automatically credited back when the book is marked as returned.</span>
             </div>
 
             {/* 4. Payment method selection */}
@@ -180,7 +219,7 @@ export default function RentBookClient({ book }: RentBookClientProps) {
                     onChange={() => setPaymentMethod('COD')}
                     className="text-blue-600 focus:ring-blue-500 w-4 h-4 border-slate-200"
                   />
-                  <span>Pay on Delivery (COD)</span>
+                  <span>Pay on Delivery / Pickup (COD)</span>
                 </label>
               </div>
             </div>

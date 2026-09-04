@@ -1,13 +1,26 @@
 [
   {
-    "title": "Clean Code",
+    "id": "req-1",
+    "userId": "usr-user1",
+    "userName": "Ajitha",
+    "title": "Clean Code: A Handbook of Agile Software Craftsmanship",
+    "author": "Robert C. Martin",
     "category": "Programming",
-    "maxPrice": 500,
-    "preferredCondition": "GOOD",
     "city": "Chennai",
-    "requesterId": "nlkcoogee",
-    "id": "6tswgww8o",
-    "status": "MATCHED",
-    "createdAt": "2026-09-02T04:04:53.009Z"
+    "urgency": "HIGH",
+    "status": "OPEN",
+    "createdAt": "2026-08-30T10:00:00.000Z"
+  },
+  {
+    "id": "req-2",
+    "userId": "usr-user1",
+    "userName": "Ajitha",
+    "title": "Artificial Intelligence: A Modern Approach (4th Edition)",
+    "author": "Stuart Russell & Peter Norvig",
+    "category": "Artificial Intelligence",
+    "city": "Chennai",
+    "urgency": "MEDIUM",
+    "status": "OPEN",
+    "createdAt": "2026-09-01T15:30:00.000Z"
   }
 ]
