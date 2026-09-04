@@ -2,48 +2,60 @@
   {
     "id": "ord-1",
     "bookId": "bk-3",
-    "buyerId": "usr-user2",
+    "buyerId": "usr-user1",
     "sellerId": "usr-user3",
     "amount": 1200,
     "deliveryMethod": "DELIVERY",
     "paymentStatus": "PAID",
     "orderStatus": "IN_TRANSIT",
-    "createdAt": "2026-08-25T16:17:01.812Z"
+    "createdAt": "2026-09-02T10:15:00.000Z"
   },
   {
     "id": "ord-2",
     "bookId": "bk-8",
-    "buyerId": "usr-user3",
+    "buyerId": "usr-user2",
     "sellerId": "usr-user1",
     "amount": 0,
-    "deliveryMethod": "PICKUP",
-    "paymentStatus": "COD",
-    "orderStatus": "READY_FOR_PICKUP",
-    "pickupLocation": "Anna Nagar West Bus Stand",
-    "createdAt": "2026-08-25T16:17:01.812Z"
+    "deliveryMethod": "DELIVERY",
+    "paymentStatus": "PAID",
+    "orderStatus": "ASSIGNED",
+    "pickupLocation": "10, Kasturiba Nagar, Adyar, Chennai",
+    "createdAt": "2026-09-03T14:20:00.000Z"
   },
   {
-    "buyerId": "dfhw217lp",
-    "sellerId": "usr-user4",
-    "bookId": "bk-31",
+    "id": "ord-3",
+    "bookId": "bk-4",
+    "buyerId": "usr-user1",
+    "sellerId": "usr-user3",
+    "amount": 0,
+    "deliveryMethod": "DELIVERY",
+    "paymentStatus": "PAID",
+    "orderStatus": "PENDING",
+    "pickupLocation": "Direct Book Exchange",
+    "createdAt": "2026-09-04T08:00:00.000Z"
+  },
+  {
+    "id": "ord-4",
+    "bookId": "bk-2",
+    "buyerId": "usr-user1",
+    "sellerId": "usr-user2",
     "amount": 190,
     "deliveryMethod": "DELIVERY",
-    "paymentStatus": "COD",
+    "paymentStatus": "PAID",
     "orderStatus": "PENDING",
     "pickupLocation": "Book Rental contract: 14 days",
-    "id": "umpz4s0et",
-    "createdAt": "2026-08-28T02:04:15.522Z"
+    "createdAt": "2026-09-04T09:30:00.000Z"
   },
   {
-    "buyerId": "nlkcoogee",
-    "sellerId": "usr-user5",
-    "bookId": "bk-32",
-    "amount": 120,
-    "deliveryMethod": "DELIVERY",
-    "paymentStatus": "COD",
-    "orderStatus": "PENDING",
-    "pickupLocation": "Book Rental contract: 7 days",
-    "id": "7aptfvn16",
-    "createdAt": "2026-09-02T04:06:37.508Z"
+    "id": "ord-5",
+    "bookId": "bk-1",
+    "buyerId": "usr-user4",
+    "sellerId": "usr-user1",
+    "amount": 850,
+    "deliveryMethod": "PICKUP",
+    "paymentStatus": "PAID",
+    "orderStatus": "DELIVERED",
+    "pickupLocation": "Adyar Bus Stand, Chennai",
+    "createdAt": "2026-08-30T11:00:00.000Z"
   }
 ]

@@ -1,33 +1,36 @@
 [
   {
-    "id": "chain_demo_101",
-    "status": "CONFIRMED",
-    "members": [
+    "id": "chain-1",
+    "status": "PROPOSED",
+    "participants": [
       {
         "userId": "usr-user1",
-        "userName": "Ajitha Priya",
-        "offeredBookId": "bk-1",
-        "offeredBookTitle": "Python Crash Course",
-        "requestedBookId": "bk-2",
-        "requestedBookTitle": "Eloquent JavaScript"
+        "userName": "Ajitha",
+        "givesBookId": "bk-1",
+        "givesBookTitle": "Python Crash Course",
+        "receivesBookId": "bk-4",
+        "receivesBookTitle": "Design Patterns",
+        "accepted": true
       },
       {
         "userId": "usr-user2",
         "userName": "Rahul Subramanian",
-        "offeredBookId": "bk-2",
-        "offeredBookTitle": "Eloquent JavaScript",
-        "requestedBookId": "bk-3",
-        "requestedBookTitle": "Clean Code"
+        "givesBookId": "bk-4",
+        "givesBookTitle": "Design Patterns",
+        "receivesBookId": "bk-5",
+        "receivesBookTitle": "Introduction to Algorithms (CLRS)",
+        "accepted": false
       },
       {
         "userId": "usr-user3",
-        "userName": "Priya Dharshini",
-        "offeredBookId": "bk-3",
-        "offeredBookTitle": "Clean Code",
-        "requestedBookId": "bk-1",
-        "requestedBookTitle": "Python Crash Course"
+        "userName": "Priya Raman",
+        "givesBookId": "bk-5",
+        "givesBookTitle": "Introduction to Algorithms (CLRS)",
+        "receivesBookId": "bk-1",
+        "receivesBookTitle": "Python Crash Course",
+        "accepted": true
       }
     ],
-    "createdAt": "2026-09-02T10:00:00.000Z"
+    "createdAt": "2026-09-02T16:00:00.000Z"
   }
 ]

@@ -1,50 +1,34 @@
 [
   {
     "id": "notif-1",
-    "userId": "usr-user2",
+    "userId": "usr-user1",
+    "title": "Delivery In Transit",
+    "message": "Your book parcel for 'Clean Code' is currently in transit with courier partner Dhinesh Kumar.",
+    "read": false,
+    "createdAt": "2026-09-02T10:15:00.000Z"
+  },
+  {
+    "id": "notif-2",
+    "userId": "usr-user1",
     "title": "Exchange Request Received",
-    "message": "Ajitha Priya proposed exchanging Python Crash Course for your Eloquent JavaScript.",
-    "isRead": false,
-    "createdAt": "2026-08-25T16:17:01.812Z"
+    "message": "Rahul Subramanian offered 'Artificial Intelligence: A Modern Approach' in exchange for your 'Python Crash Course'.",
+    "read": false,
+    "createdAt": "2026-09-01T09:30:00.000Z"
   },
   {
-    "id": "fzoq419g3",
-    "userId": "usr-user4",
-    "title": "Book Rented out!",
-    "message": "Your book \"Textbook on Mathematics Vol 10\" has been rented out by Ajitha for 14 days.",
-    "isRead": false,
-    "createdAt": "2026-08-28T02:04:15.532Z"
+    "id": "notif-3",
+    "userId": "usr-staff1",
+    "title": "New Assignment Pending",
+    "message": "You have 2 pending delivery assignments in Chennai service area (Guindy, Adyar, Velachery).",
+    "read": false,
+    "createdAt": "2026-09-03T14:20:00.000Z"
   },
   {
-    "id": "gnj2k4r5y",
-    "userId": "dfhw217lp",
-    "title": "Rental confirmed!",
-    "message": "You rented \"Textbook on Mathematics Vol 10\" for 14 days. Total fee: ₹190.",
-    "isRead": false,
-    "createdAt": "2026-08-28T02:04:15.536Z"
-  },
-  {
-    "id": "0mqgwuk3y",
-    "userId": "nlkcoogee",
-    "title": "Immediate Request Match!",
-    "message": "We found a book matching your request: \"Introduction to Algorithms\" listed by Ajitha Priya for ₹0 in Chennai.",
-    "isRead": false,
-    "createdAt": "2026-09-02T04:04:53.034Z"
-  },
-  {
-    "id": "2tzy34poz",
-    "userId": "usr-user5",
-    "title": "Book Rented out!",
-    "message": "Your book \"Textbook on Management Vol 10\" has been rented out by Ajitha D R for 7 days.",
-    "isRead": false,
-    "createdAt": "2026-09-02T04:06:37.541Z"
-  },
-  {
-    "id": "9x3qeykfu",
-    "userId": "nlkcoogee",
-    "title": "Rental confirmed!",
-    "message": "You rented \"Textbook on Management Vol 10\" for 7 days. Total fee: ₹120.",
-    "isRead": false,
-    "createdAt": "2026-09-02T04:06:37.636Z"
+    "id": "notif-4",
+    "userId": "usr-admin",
+    "title": "Logistics Alert",
+    "message": "2 unassigned home delivery shipments require staff allocation.",
+    "read": false,
+    "createdAt": "2026-09-04T08:00:00.000Z"
   }
 ]
