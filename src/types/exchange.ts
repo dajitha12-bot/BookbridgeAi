@@ -6,6 +6,7 @@ export interface Exchange {
   receiverId: string;
   offeredBookId: string;
   requestedBookId: string;
+  deliveryMethod?: 'DELIVERY' | 'PICKUP';
   status: ExchangeStatus;
   createdAt: string;
 }

@@ -2,6 +2,7 @@
 
 import { getExchangeById, createExchange, updateExchange } from '../lib/db/exchanges';
 import { getBookById, updateBook } from '../lib/db/books';
+import { getProfileByUserId, getUserById } from '../lib/db/users';
 import { createNotification } from '../lib/db/notifications';
 import { getSession } from '../lib/auth/session';
 import { findSwapChains } from '../lib/utils/swapChainAlgorithm';
@@ -11,9 +12,13 @@ import { createDelivery } from '../lib/db/deliveries';
 import { revalidatePath } from 'next/cache';
 
 /**
- * Request Direct Book Exchange
+ * Request Direct Book Exchange with Handover selection
  */
-export async function requestExchangeAction(offeredBookId: string, requestedBookId: string) {
+export async function requestExchangeAction(
+  offeredBookId: string, 
+  requestedBookId: string,
+  deliveryMethod: 'DELIVERY' | 'PICKUP' = 'DELIVERY'
+) {
   try {
     const session = await getSession();
     if (!session) return { success: false, error: 'Unauthorized.' };
@@ -34,13 +39,14 @@ export async function requestExchangeAction(offeredBookId: string, requestedBook
       receiverId: requestedBook.ownerId,
       offeredBookId,
       requestedBookId,
+      deliveryMethod,
       status: 'PENDING',
     });
 
     await createNotification(
       requestedBook.ownerId,
       'New Exchange Request',
-      `${session.name} has offered "${offeredBook.title}" in exchange for your book "${requestedBook.title}".`
+      `${session.name} has offered "${offeredBook.title}" in exchange for your book "${requestedBook.title}" (${deliveryMethod === 'DELIVERY' ? 'Home Delivery' : 'Self Pickup'}).`
     );
 
     revalidatePath('/dashboard/exchange');
@@ -80,6 +86,9 @@ export async function respondExchangeAction(exchangeId: string, accept: boolean)
         return { success: false, error: 'One or both books are no longer available.' };
       }
 
+      const deliveryMethod = exchange.deliveryMethod || 'DELIVERY';
+      const orderStatus = deliveryMethod === 'PICKUP' ? 'READY_FOR_PICKUP' : 'PENDING';
+
       await updateExchange(exchangeId, { status: 'ACCEPTED' });
       await updateBook(exchange.offeredBookId, { status: 'RESERVED' });
       await updateBook(exchange.requestedBookId, { status: 'RESERVED' });
@@ -89,21 +98,32 @@ export async function respondExchangeAction(exchangeId: string, accept: boolean)
         sellerId: exchange.receiverId,
         bookId: exchange.requestedBookId,
         amount: 0,
-        deliveryMethod: 'DELIVERY',
+        deliveryMethod,
         paymentStatus: 'PAID',
-        orderStatus: 'PENDING',
+        orderStatus: orderStatus as any,
+        pickupLocation: `Direct Exchange (${deliveryMethod})`,
       });
 
-      await createDelivery({
-        orderId: newOrder.id,
-        staffId: '',
-        status: 'PENDING' as any,
-      });
+      if (deliveryMethod === 'DELIVERY') {
+        const buyerProfile = await getProfileByUserId(exchange.senderId);
+        const sellerProfile = await getProfileByUserId(exchange.receiverId);
+
+        const pickupAddress = sellerProfile ? `${sellerProfile.address}, ${sellerProfile.area}, ${sellerProfile.city} - ${sellerProfile.pincode}` : 'Seller Pickup Address, Chennai';
+        const deliveryAddress = buyerProfile ? `${buyerProfile.address}, ${buyerProfile.area}, ${buyerProfile.city} - ${buyerProfile.pincode}` : 'Buyer Delivery Address, Chennai';
+
+        await createDelivery({
+          orderId: newOrder.id,
+          staffId: '',
+          status: 'PENDING' as any,
+          pickupAddress,
+          deliveryAddress,
+        });
+      }
 
       await createNotification(
         exchange.senderId,
         'Exchange Request Accepted!',
-        `${session.name} accepted your exchange of "${offeredBook.title}" for "${requestedBook.title}". An order has been created in My Orders!`
+        `${session.name} accepted your exchange of "${offeredBook.title}" for "${requestedBook.title}". Order created with ${deliveryMethod === 'DELIVERY' ? 'Home Delivery (Assign Staff)' : 'Self Pickup'}.`
       );
     } else {
       await updateExchange(exchangeId, { status: 'REJECTED' });
@@ -120,12 +140,12 @@ export async function respondExchangeAction(exchangeId: string, accept: boolean)
     return { success: true };
   } catch (error: any) {
     console.error('Respond exchange error:', error);
-    return { success: false, error: 'Failed to process exchange request.' };
+    return { success: false, error: 'Failed to process response.' };
   }
 }
 
 /**
- * Complete Exchange
+ * Complete Exchange Action
  */
 export async function completeExchangeAction(exchangeId: string) {
   try {
@@ -139,96 +159,78 @@ export async function completeExchangeAction(exchangeId: string) {
     await updateBook(exchange.offeredBookId, { status: 'EXCHANGED' });
     await updateBook(exchange.requestedBookId, { status: 'EXCHANGED' });
 
-    await createNotification(
-      exchange.senderId,
-      'Exchange Completed!',
-      'Your exchange of books is now complete. Enjoy your new book!'
-    );
-
-    await createNotification(
-      exchange.receiverId,
-      'Exchange Completed!',
-      'Your exchange of books is now complete. Enjoy your new book!'
-    );
-
     revalidatePath('/dashboard/exchange');
     revalidatePath('/dashboard/orders');
     return { success: true };
   } catch (error: any) {
-    console.error('Complete exchange error:', error);
     return { success: false, error: 'Failed to complete exchange.' };
   }
 }
 
+/**
+ * Get Swap Chains Action
+ */
 export async function getSwapChainChainsAction() {
   try {
-    const chains = await findSwapChains();
+    const session = await getSession();
+    if (!session) return { success: false, error: 'Unauthorized.', chains: [] };
+
+    const chains = await getAllSwapChains();
     return { success: true, chains };
-  } catch (error: any) {
-    return { success: false, error: 'Failed to run SwapChain graph algorithm.' };
+  } catch (e: any) {
+    return { success: false, error: 'Failed to retrieve swap chains.', chains: [] };
   }
 }
 
-export async function createSwapChainAction(chain: { userId: string; offeredBookId: string; requestedBookId: string }[]) {
+/**
+ * Create Swap Chain Action
+ */
+export async function createSwapChainAction(members: any[]) {
   try {
     const session = await getSession();
     if (!session) return { success: false, error: 'Unauthorized.' };
 
-    const sc = await createSwapChain({
-      status: 'PENDING',
-      members: chain.map(m => ({
-        userId: m.userId,
-        offeredBookId: m.offeredBookId,
-        requestedBookId: m.requestedBookId,
-        status: m.userId === session.id ? 'ACCEPTED' : 'PENDING',
-      })),
+    const chain = await createSwapChain({
+      members,
+      status: 'PROPOSED',
     });
 
     revalidatePath('/dashboard/swapchain');
-    return { success: true, swapChainId: sc.id };
-  } catch (error: any) {
-    return { success: false, error: 'Failed to create SwapChain.' };
+    return { success: true, chainId: chain.id };
+  } catch (e: any) {
+    return { success: false, error: 'Failed to create swap chain.' };
   }
 }
 
-export async function respondSwapChainMemberAction(memberId: string, accept: boolean) {
+/**
+ * Respond Swap Chain Member Action
+ */
+export async function respondSwapChainMemberAction(chainId: string, accept: boolean) {
   try {
     const session = await getSession();
     if (!session) return { success: false, error: 'Unauthorized.' };
 
-    const dbChains = await getAllSwapChains();
-    let targetChain = null;
-    let memberIdx = -1;
+    const chain = await getSwapChainById(chainId);
+    if (!chain) return { success: false, error: 'Swap chain not found.' };
 
-    for (const c of dbChains) {
-      const idx = c.members.findIndex((m: any) => m.userId === session.id && m.status === 'PENDING');
-      if (idx !== -1) {
-        targetChain = c;
-        memberIdx = idx;
-        break;
+    const updatedMembers = chain.members.map((m: any) => {
+      if (m.userId === session.id) {
+        return { ...m, accepted: accept };
       }
-    }
+      return m;
+    });
 
-    if (!targetChain || memberIdx === -1) {
-      return { success: false, error: 'SwapChain invitation not found.' };
-    }
+    const allAccepted = updatedMembers.every((m: any) => m.accepted);
+    const newStatus = allAccepted ? 'CONFIRMED' : accept ? 'PROPOSED' : 'CANCELLED';
 
-    if (!accept) {
-      targetChain.status = 'CANCELLED';
-      targetChain.members[memberIdx].status = 'DECLINED';
-      await updateSwapChain(targetChain.id, targetChain);
-    } else {
-      targetChain.members[memberIdx].status = 'ACCEPTED';
-      const allAccepted = targetChain.members.every((m: any) => m.status === 'ACCEPTED');
-      if (allAccepted) {
-        targetChain.status = 'CONFIRMED';
-      }
-      await updateSwapChain(targetChain.id, targetChain);
-    }
+    await updateSwapChain(chainId, {
+      members: updatedMembers,
+      status: newStatus as any,
+    });
 
     revalidatePath('/dashboard/swapchain');
     return { success: true };
-  } catch (error: any) {
-    return { success: false, error: 'Failed to process SwapChain action.' };
+  } catch (e: any) {
+    return { success: false, error: 'Failed to update swap chain response.' };
   }
 }

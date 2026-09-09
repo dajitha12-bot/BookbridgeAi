@@ -1,5 +1,6 @@
 import { getSession } from '../../lib/auth/session';
 import { getProfileByUserId } from '../../lib/db/users';
+import { getRequestsByUser } from '../../lib/db/bookRequests';
 import BrowseBooksClient from '../../components/BrowseBooksClient';
 import Link from 'next/link';
 
@@ -10,6 +11,7 @@ export default async function BrowsePage() {
   
   let coords = null;
   let userId = null;
+  let userRequests: any[] = [];
 
   if (session) {
     userId = session.id;
@@ -20,6 +22,7 @@ export default async function BrowsePage() {
         longitude: profile.longitude,
       };
     }
+    userRequests = await getRequestsByUser(session.id);
   }
 
   return (
@@ -70,7 +73,7 @@ export default async function BrowsePage() {
 
       {/* Main Browse Panel */}
       <div className="flex-1">
-        <BrowseBooksClient userId={userId} coordinates={coords} />
+        <BrowseBooksClient userId={userId} coordinates={coords} userRequests={userRequests as any} />
       </div>
 
       {/* Footer */}
