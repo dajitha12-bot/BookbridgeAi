@@ -144,7 +144,7 @@ export async function getSession(): Promise<SessionUser | null> {
   // Default fallback user session (User workspace)
   return {
     id: 'usr-user1',
-    name: 'Ajitha Priya',
+    name: 'Ajitha',
     email: 'ajitha@gmail.com',
     role: 'USER',
   };

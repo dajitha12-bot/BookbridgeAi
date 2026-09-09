@@ -70,6 +70,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
       { label: 'Browse Books', href: '/browse', icon: Search },
       { label: 'My Books', href: '/dashboard/my-books', icon: BookOpen },
       { label: 'Add Book', href: '/dashboard/add-book', icon: PlusCircle },
+      { label: 'Rent Books', href: '/dashboard/rentals', icon: ClipboardList },
       { label: 'Book Donations', href: '/dashboard/donations', icon: Gift },
       { label: 'Book Requests', href: '/dashboard/requests', icon: MessageSquarePlus },
       { label: 'Exchange', href: '/dashboard/exchange', icon: RefreshCw },

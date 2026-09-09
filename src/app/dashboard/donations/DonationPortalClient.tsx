@@ -272,14 +272,14 @@ export default function DonationPortalClient({
             <p className="text-slate-400 text-[10px] mt-0.5">Please provide registration credentials for verification</p>
           </div>
 
-          {state.error && (
+          {error && (
             <div className="bg-rose-50 border border-rose-100 p-3 rounded-lg flex items-start space-x-2.5 text-rose-600 text-xs font-semibold">
               <AlertCircle className="w-4 h-4 text-rose-500 flex-shrink-0 mt-0.5" />
-              <span>{state.error}</span>
+              <span>{error}</span>
             </div>
           )}
 
-          <form action={formAction} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Trust name */}
               <div className="space-y-1">

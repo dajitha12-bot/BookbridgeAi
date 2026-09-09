@@ -15,7 +15,7 @@ export default async function DashboardLayout({
 
   const activeUser = user || {
     id: session?.id || 'usr-user1',
-    name: session?.name || 'Ajitha Priya',
+    name: session?.name || 'Ajitha',
     email: session?.email || 'ajitha@gmail.com',
     role: session?.role || 'USER',
     profile: {
