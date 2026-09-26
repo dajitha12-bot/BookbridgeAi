@@ -1,33 +1,41 @@
-import { readCollection, writeCollection, generateId } from './dbHelper';
+import { db } from './sqliteDb';
 import { Review } from '../../types';
+import { generateId } from './dbHelper';
 
-const REVIEWS_FILE = 'reviews.json';
+function mapRowToReview(row: any): Review {
+  return {
+    id: row.id,
+    reviewerId: row.reviewer_id,
+    targetId: row.target_user_id,
+    orderId: row.book_id || undefined,
+    rating: row.rating,
+    comment: row.comment || '',
+    createdAt: row.created_at,
+  };
+}
 
 export async function getAllReviews(): Promise<Review[]> {
-  return readCollection<Review>(REVIEWS_FILE);
+  const rows = db.prepare('SELECT * FROM reviews ORDER BY created_at DESC').all();
+  return rows.map(mapRowToReview);
+}
+
+export async function getReviewsForTarget(targetId: string): Promise<Review[]> {
+  const rows = db.prepare('SELECT * FROM reviews WHERE target_user_id = ? ORDER BY created_at DESC').all(targetId);
+  return rows.map(mapRowToReview);
 }
 
 export async function getReviewsForUser(userId: string): Promise<Review[]> {
-  const reviews = await getAllReviews();
-  return reviews.filter(r => r.revieweeId === userId);
-}
-
-export async function getReviewsByUser(userId: string): Promise<Review[]> {
-  const reviews = await getAllReviews();
-  return reviews.filter(r => r.reviewerId === userId);
+  return getReviewsForTarget(userId);
 }
 
 export async function createReview(reviewData: Omit<Review, 'id' | 'createdAt'>): Promise<Review> {
-  const reviews = await getAllReviews();
+  const id = `rev-${generateId()}`;
+  const createdAt = new Date().toISOString();
 
-  const newReview: Review = {
-    ...reviewData,
-    id: generateId(),
-    createdAt: new Date().toISOString(),
-  };
+  db.prepare(`
+    INSERT INTO reviews (id, reviewer_id, target_user_id, book_id, rating, comment, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `).run(id, reviewData.reviewerId, reviewData.targetId, reviewData.orderId || null, reviewData.rating, reviewData.comment || '', createdAt);
 
-  reviews.push(newReview);
-  writeCollection(REVIEWS_FILE, reviews);
-
-  return newReview;
+  return { id, ...reviewData, createdAt };
 }

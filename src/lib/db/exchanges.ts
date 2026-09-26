@@ -1,47 +1,71 @@
-import { readCollection, writeCollection, generateId } from './dbHelper';
+import { db } from './sqliteDb';
 import { Exchange } from '../../types';
+import { generateId } from './dbHelper';
 
-const EXCHANGES_FILE = 'exchanges.json';
+function mapRowToExchange(row: any): Exchange {
+  return {
+    id: row.id,
+    senderId: row.sender_id,
+    receiverId: row.receiver_id,
+    offeredBookId: row.offered_book_id,
+    requestedBookId: row.requested_book_id,
+    handoverMethod: row.handover_method || 'DELIVERY',
+    status: row.status || 'PENDING',
+    createdAt: row.created_at,
+  } as any;
+}
 
 export async function getAllExchanges(): Promise<Exchange[]> {
-  return readCollection<Exchange>(EXCHANGES_FILE);
+  const rows = db.prepare('SELECT * FROM exchanges ORDER BY created_at DESC').all();
+  return rows.map(mapRowToExchange);
 }
 
 export async function getExchangeById(id: string): Promise<Exchange | null> {
-  const exchanges = await getAllExchanges();
-  return exchanges.find(e => e.id === id) || null;
+  const row = db.prepare('SELECT * FROM exchanges WHERE id = ?').get(id);
+  return row ? mapRowToExchange(row) : null;
 }
 
 export async function getExchangesByUser(userId: string): Promise<Exchange[]> {
-  const exchanges = await getAllExchanges();
-  return exchanges.filter(e => e.senderId === userId || e.receiverId === userId);
+  const rows = db.prepare('SELECT * FROM exchanges WHERE sender_id = ? OR receiver_id = ? ORDER BY created_at DESC').all(userId, userId);
+  return rows.map(mapRowToExchange);
 }
 
-export async function createExchange(exchangeData: Omit<Exchange, 'id' | 'createdAt'>): Promise<Exchange> {
-  const exchanges = await getAllExchanges();
+export async function createExchange(exchangeData: Omit<Exchange, 'id' | 'createdAt'> & Partial<Exchange>): Promise<Exchange> {
+  const id = `exc-${generateId()}`;
+  const createdAt = new Date().toISOString();
 
-  const newExchange: Exchange = {
-    ...exchangeData,
-    id: generateId(),
-    createdAt: new Date().toISOString(),
-  };
+  db.prepare(`
+    INSERT INTO exchanges (id, sender_id, receiver_id, offered_book_id, requested_book_id, handover_method, status, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    id,
+    exchangeData.senderId,
+    exchangeData.receiverId,
+    exchangeData.offeredBookId,
+    exchangeData.requestedBookId,
+    (exchangeData as any).handoverMethod || 'DELIVERY',
+    exchangeData.status || 'PENDING',
+    createdAt
+  );
 
-  exchanges.push(newExchange);
-  writeCollection(EXCHANGES_FILE, exchanges);
-
-  return newExchange;
+  return (await getExchangeById(id))!;
 }
 
-export async function updateExchange(id: string, updates: Partial<Omit<Exchange, 'id' | 'createdAt'>>): Promise<Exchange | null> {
-  const exchanges = await getAllExchanges();
-  const idx = exchanges.findIndex(e => e.id === id);
-  if (idx === -1) return null;
+export async function updateExchange(id: string, updates: Partial<Omit<Exchange, 'id' | 'createdAt'>> & Record<string, any>): Promise<Exchange | null> {
+  const existing = await getExchangeById(id);
+  if (!existing) return null;
 
-  exchanges[idx] = {
-    ...exchanges[idx],
-    ...updates,
-  };
+  db.prepare(`
+    UPDATE exchanges
+    SET status = COALESCE(?, status),
+        handover_method = COALESCE(?, handover_method),
+        updated_at = CURRENT_TIMESTAMP
+    WHERE id = ?
+  `).run(
+    updates.status ?? null,
+    (updates as any).handoverMethod ?? null,
+    id
+  );
 
-  writeCollection(EXCHANGES_FILE, exchanges);
-  return exchanges[idx];
+  return getExchangeById(id);
 }

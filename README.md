@@ -1,105 +1,119 @@
-# BookBridge AI – Smart Book Exchange & Delivery Platform
+# Smart Book Circulation & Fair Price Predictor (BookBridge AI)
 
-**Tagline**: Buy. Sell. Exchange. Deliver.
-
-BookBridge AI is a professional, city-wide book sharing, buy/sell, donation, and logistics platform designed for readers to exchange literature and engineering textbooks locally. It combines Next.js App Router, SQLite, Prisma ORM, and Tailwind CSS with a local multivariable linear regression AI for fair price estimation.
+A complete, full-stack, professional used-book circulation and market intelligence platform built with **Next.js 15 App Router**, **TypeScript**, **Tailwind CSS**, and a **real physical SQLite database (`data/bookbridge.db`)**.
 
 ---
 
-## Approximate Project Composition
-- **Full-Stack & Business Logic**: 80–85%
-- **Embedded AI/ML (Fair Price Suggestion)**: 15–20%
+## 🌟 Key Features
+
+### 1. Multi-Model Book Circulation
+- 🛒 **Buy & Sell**: List textbooks with condition details, AI pricing suggestions, and purchase with home delivery or offline pickup.
+- 📖 **Rent a Book**: Rent textbooks for flexible durations (7, 14, 30 days) with automated daily fee & security deposit calculations.
+- 🔄 **Exchange & SwapChain**: Peer-to-peer book swaps and multi-user circular trade chain detection (User A → User B → User C → User A).
+- 🎁 **Charity Book Donations**: Donate textbooks to verified schools, rural non-profits, and educational trusts.
+
+### 2. Unified AI Pipeline: "Smart Book Market & Fair Price Intelligence"
+- **AI-Assisted Visual Condition Analysis**: Evaluates cover photo brightness, contrast, and edge wear to detect visual condition (`LIKE_NEW`, `VERY_GOOD`, `GOOD`, `FAIR`).
+- **Open Library ISBN Identification**: Queries public book metadata with graceful SQLite fallback.
+- **Dynamic Demand Scoring Engine**: Computes dynamic 0–100 demand scores from SQLite activity logs (Requests 35%, Wishlist 20%, Searches 15%, Views 10%, Sales 10%, Rentals 10%).
+- **Explainable Fair Price Predictor**: Calculates AI Fair Price (₹), min/max range, confidence rating (%), and factor breakdown.
+- **Book Market Intelligence Page (`/dashboard/market-intelligence`)**: Real-time demand gauges, category price ranges, price trends, and monthly transaction history charts.
+
+### 3. Real SQLite Database (`data/bookbridge.db`)
+- **No Mock Arrays or JSON Primary Storage**: Powered by `better-sqlite3` writing directly to `data/bookbridge.db`.
+- **23 Relational Tables**: Includes foreign keys, indexes, and automated timestamp tracking.
+- **Persistent Storage**: Data persists permanently across application restarts.
+
+### 4. Logistics & Delivery Staff Management
+- **Configurable Distance-Based Charges**: Admin configurable fee tiers (0–5 km = ₹30, 5–10 km = ₹40, 10–20 km = ₹60, 20–30 km = ₹80, 30+ km = ₹100).
+- **Home Delivery vs. Offline Pickup**: Choice of courier dispatch with unassigned staff routing or coordinate pickup points.
+- **Delivery Staff Portal**: Dedicated dashboard for drivers to manage assignments, transit milestones, rental deliveries, and earnings.
 
 ---
 
-## 1. Core Platform Features
-- **Buy Used Books**: Purchase pre-owned textbooks or novels listed in your neighborhood.
-- **Sell Used Books**: List old books and get instant pricing suggestions from our AI model.
-- **Direct Book Exchange**: Propose direct swaps between two users.
-- **SwapChain Exchange**: Graph cycle DFS detection finds multi-user exchange loops (e.g. A -> B -> C -> A) when direct swaps are unavailable.
-- **Donate Books**: Mark books as free donations.
-- **Book Requests**: Request unavailable titles and get notified when someone lists them in your city.
-- **Geographic Distance**: Sort listings by nearest distance calculated using the Haversine formula on registered addresses.
-- **Logistics Choices**: Choose between Home Delivery or Offline Pickups.
-- **Payment Abstraction**: Supports Cash on Delivery (COD) or simulated online credit card authorization.
-- **Logistics Workloads**: Matches orders to available delivery staff using weighted logistics rules.
-- **Reviews & Ratings**: Evaluate book conditions, seller reliability, and delivery staff performance.
+## 🔑 Demo Login Accounts
+
+Test the application across all three user roles using these working credentials:
+
+| Role | Email | Password | Access Level |
+| :--- | :--- | :--- | :--- |
+| **User** | `user@bookbridge.com` | `user123` | Buy, Sell, Rent, Exchange, Donate, Wishlist, Market Intelligence |
+| **Delivery Staff** | `staff@bookbridge.com` | `staff123` | Assigned Deliveries, Transit Milestones, Rental Routes, Earnings |
+| **Admin** | `admin@bookbridge.com` | `admin123` | User/Staff Mgmt, Order Audits, Delivery Staff Assignment, Settings |
+
+*(Alternative Demo User: `ajitha@gmail.com` / `user123`)*
 
 ---
 
-## 2. Three Dashboards
-1. **User Dashboard**: Acts as both Buyer, Seller, Exchanger, and Donor. Features statistics counters, active order logs, nearby listing maps, book request boards, and SwapChain proposes.
-2. **Delivery Staff Dashboard**: Access assigned delivery routes, update shipment milestones, and view history.
-3. **Admin Dashboard**: System diagnostics, user blocks/unblocks, logs verification, unassigned order logs, and weighted staff recommendations.
+## 🛠️ Technology Stack
+
+- **Framework**: Next.js 15 (App Router & Server Actions)
+- **Language**: TypeScript
+- **Database Engine**: SQLite (`better-sqlite3`)
+- **Database Location**: `data/bookbridge.db`
+- **UI & Styling**: React 19, Tailwind CSS, Lucide React Icons
+- **AI / ML**: Local Visual Feature Extractor, Open Library REST API, Explainable Regression Engine
 
 ---
 
-## 3. Technology Stack
-- **Frontend**: Next.js, React.js (App Router), TypeScript, Tailwind CSS, Lucide React Icons.
-- **Backend**: Next.js Server Actions, Next.js API Routes, TypeScript.
-- **Database**: SQLite + Prisma ORM.
-- **Authentication**: Email/Password authentication, secure cookies, PBKDF2 hashing, and role authorization.
-- **AI/ML**: Custom Embedded Multivariable Linear Regression with Gradient Descent.
+## 📁 Project Structure & Documentation
 
----
-
-## 4. Database Setup & Schema
-Prisma models configured in SQLite:
-- `User` & `Profile`: Authentication and geolocation coordinates.
-- `Book` & `Category`: Listings and genres.
-- `Wishlist` & `BookRequest`: Saved titles and buy requests.
-- `Order` & `Payment`: Transaction logs.
-- `Exchange` & `SwapChain`: Direct and loop trades.
-- `DeliveryStaff` & `Delivery`: Shipments and staff.
-- `Review` & `Notification`: User feedback and alerts.
-
----
-
-## 5. Non-AI Smart Algorithms
-- **Smart Book Recommendations**: Database-backed matching category interests.
-- **Nearby Seller Ranking**: Mathematical Haversine distance formula.
-- **SwapChain cycle finder**: DFS graph cycle analysis.
-- **Delivery Staff Assignment**: Weighted matching rules.
-
----
-
-## 6. Installation & Execution
-
-### 6.1 Prerequisites
-- Node.js (v18 or higher)
-- npm (v10 or higher)
-
-### 6.2 Environment Configuration
-Create a `.env` file at the project root based on `.env.example`:
-```env
-DATABASE_URL="file:./dev.db"
-SESSION_SECRET="your-32-byte-hex-string-for-cookie-encryption"
+```
+├── data/
+│   └── bookbridge.db           # Physical SQLite Database File
+├── src/
+│   ├── actions/                # Server Actions (auth, books, orders, etc.)
+│   ├── app/                    # Next.js App Router Pages & Layouts
+│   │   ├── dashboard/
+│   │   │   ├── market-intelligence/ # Book Market Intelligence Dashboard
+│   │   │   ├── my-books/       # 8-Tab Activity Center
+│   │   │   ├── rentals/        # Rent Books Catalog
+│   │   │   └── ...
+│   │   ├── admin/              # Admin Control Panel
+│   │   ├── staff/              # Delivery Staff Portal
+│   │   └── page.tsx            # SaaS Landing Page with Role Cards
+│   ├── components/             # Reusable UI Shell & Components
+│   ├── lib/
+│   │   ├── ai/                 # Unified AI Pipeline Modules
+│   │   │   ├── imageAnalysis.ts
+│   │   │   ├── bookIdentification.ts
+│   │   │   ├── demandScore.ts
+│   │   │   ├── pricePrediction.ts
+│   │   │   └── marketIntelligence.ts
+│   │   ├── db/                 # SQLite Database Layer (sqliteDb.ts & Repositories)
+│   │   └── utils/              # Distance & Delivery Fee Calculation
+├── DATABASE_SETUP.md           # Instructions for inspecting bookbridge.db
+├── API_SETUP.md                # Open Library API setup & fallback documentation
+└── AI_IMPLEMENTATION.md        # Technical guide to the Unified AI Pipeline
 ```
 
-### 6.3 Prisma Setup & Seeding
-Install dependencies and run database synchronization:
+---
+
+## 🚀 Quick Start & Running the Project
+
+### 1. Installation
+Clone the repository and install dependencies:
 ```bash
-# Install npm dependencies
 npm install
-
-# Sync Prisma Schema and generate Client
-npx prisma db push
-
-# Seed the database with sample users and books
-npx prisma db seed
 ```
 
-### 6.4 Running the Application
-Start the Next.js development server:
+### 2. Development Server
+Run the development server:
 ```bash
 npm run dev
 ```
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+Open [http://localhost:3000](http://localhost:3000) in your browser. The SQLite database `data/bookbridge.db` will automatically initialize and seed with baseline records on first launch.
+
+### 3. Building for Production
+Verify production build:
+```bash
+npm run build
+```
 
 ---
 
-## 7. Future Enhancements
-- Replace the local TypeScript regression pricing model with a TensorFlow.js regression model or custom neural network.
-- Integrate real-time GPS tracking for delivery staff.
-- Expand payment methods to include UPI and Stripe gateway webhooks.
-- Support book cover image uploads directly to Cloudinary or AWS S3.
+## 📖 Further Documentation
+- Refer to [DATABASE_SETUP.md](DATABASE_SETUP.md) for steps to view `data/bookbridge.db` using VS Code SQLite Viewer or DB Browser for SQLite.
+- Refer to [API_SETUP.md](API_SETUP.md) for external API integration details.
+- Refer to [AI_IMPLEMENTATION.md](AI_IMPLEMENTATION.md) for deep-dive technical specs on the Unified AI Pipeline.

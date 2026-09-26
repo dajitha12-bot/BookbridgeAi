@@ -1,13 +1,14 @@
 'use server';
 
 import { getAllBooks, createBook, updateBook, deleteBook, getBookById } from '../lib/db/books';
-import { getProfileByUserId, getUserById } from '../lib/db/users';
-import { getAllBookRequests, updateBookRequest } from '../lib/db/bookRequests';
-import { createNotification } from '../lib/db/notifications';
+import { getProfileByUserId } from '../lib/db/users';
 import { getSession } from '../lib/auth/session';
-import { predictFairPrice, mapConditionToScore } from '../lib/ai/fairPrice';
-import { calculateDistance } from '../lib/utils/distance';
+import { predictFairPrice } from '../lib/ai/pricePrediction';
+import { lookupBookByIsbn } from '../lib/ai/bookIdentification';
+import { analyzeBookImage } from '../lib/ai/imageAnalysis';
 import { revalidatePath } from 'next/cache';
+import { db } from '../lib/db/sqliteDb';
+import { generateId } from '../lib/db/dbHelper';
 
 /**
  * Browse Books Action
@@ -15,22 +16,29 @@ import { revalidatePath } from 'next/cache';
 export async function browseBooksAction(
   search: string = '',
   filters: any = {},
-  sortBy: string = 'Newest',
-  buyerCoords?: { latitude: number; longitude: number }
+  sortBy: string = 'Newest'
 ) {
   try {
     let books = await getAllBooks();
 
-    // Filter available only by default
-    books = books.filter(b => b.status === 'AVAILABLE');
-
-    // Search filter
+    // Log search activity if search query provided
     if (search && search.trim()) {
+      try {
+        db.prepare('INSERT INTO search_activity (id, user_id, query, category) VALUES (?, ?, ?, ?)').run(
+          `s_${generateId()}`,
+          'usr-user1',
+          search.trim(),
+          filters?.category || 'General'
+        );
+      } catch (e) {
+        // Non-fatal
+      }
+
       const q = search.toLowerCase().trim();
       books = books.filter(b => 
         b.title.toLowerCase().includes(q) || 
         b.author.toLowerCase().includes(q) || 
-        b.subject.toLowerCase().includes(q) ||
+        (b.subject && b.subject.toLowerCase().includes(q)) ||
         b.category.toLowerCase().includes(q)
       );
     }
@@ -63,14 +71,6 @@ export async function browseBooksAction(
       books = books.filter(b => b.expectedPrice <= filters.maxPrice);
     }
 
-    // Logistics options
-    if (filters?.deliveryAvailable) {
-      books = books.filter(b => b.deliveryAvailable);
-    }
-    if (filters?.exchangeAvailable) {
-      books = books.filter(b => b.exchangeAvailable);
-    }
-
     // Sorting
     if (sortBy === 'PriceLowHigh') {
       books.sort((a, b) => a.expectedPrice - b.expectedPrice);
@@ -94,17 +94,42 @@ export async function browseBooksAction(
  */
 export async function getSuggestedPriceAction(
   originalPrice: number,
-  ageYears: number,
+  purchaseDate: string,
   condition: string,
   edition: number,
-  category: string
+  category: string,
+  title: string = 'Book',
+  imageUrl?: string | null
 ) {
   try {
-    const score = mapConditionToScore(condition);
-    const prediction = predictFairPrice(originalPrice, ageYears, score, edition, category);
+    const prediction = await predictFairPrice({
+      title,
+      category,
+      originalPrice,
+      purchaseDate,
+      condition,
+      edition,
+      imageUrl,
+    });
     return { success: true, ...prediction };
   } catch (error: any) {
     return { success: false, error: error.message || 'Failed to calculate price' };
+  }
+}
+
+/**
+ * Open Library ISBN Lookup Action
+ */
+export async function lookupIsbnAction(isbn: string) {
+  try {
+    const metadata = await lookupBookByIsbn(isbn);
+    if (metadata) {
+      return { success: true, metadata };
+    } else {
+      return { success: false, error: 'No metadata found for ISBN. Enter details manually.' };
+    }
+  } catch (e: any) {
+    return { success: false, error: 'Failed to query ISBN database.' };
   }
 }
 
@@ -117,14 +142,23 @@ export async function getAiChatPricePredictionAction(
   formState?: any
 ) {
   try {
-    const title = formState?.title || 'Used Book';
-    const originalPrice = formState?.originalPrice || 500;
-    const condition = formState?.condition || 'GOOD';
+    const title = formState?.title || userPrompt || 'Used Textbook';
+    const originalPrice = formState?.originalPrice || 1200;
+    const condition = formState?.condition || 'VERY_GOOD';
     const edition = formState?.edition || 1;
     const category = formState?.category || 'Programming';
+    const purchaseDate = formState?.purchaseDate || '2023-01-01';
 
-    const score = mapConditionToScore(condition);
-    const prediction = predictFairPrice(originalPrice, 2, score, edition, category);
+    const visualAnalysis = await analyzeBookImage(imagePreview, condition);
+    const prediction = await predictFairPrice({
+      title,
+      category,
+      originalPrice,
+      purchaseDate,
+      condition: visualAnalysis.detectedCondition,
+      edition,
+      imageUrl: imagePreview,
+    });
 
     return {
       success: true,
@@ -136,10 +170,10 @@ export async function getAiChatPricePredictionAction(
         edition,
         publicationYear: 2024,
         originalPrice,
-        condition,
+        condition: visualAnalysis.detectedCondition,
         suggestedPrice: prediction.suggestedPrice,
-        explanation: `Based on current market demand for ${category} books and condition ${condition}, our AI recommends ₹${prediction.suggestedPrice}.`,
-        description: `Quality textbook in ${condition} condition. Great for self-study and course reference.`
+        explanation: `${visualAnalysis.explanation} Suggested Fair Price: ₹${prediction.suggestedPrice} (Min: ₹${prediction.minPrice}, Max: ₹${prediction.maxPrice}). Confidence: ${prediction.confidence}%.`,
+        description: `Quality textbook in ${visualAnalysis.detectedCondition.replace('_', ' ')} condition. Fair price recommended by BookBridge Smart Market AI.`
       }
     };
   } catch (error: any) {
@@ -179,7 +213,6 @@ export async function addBookAction(prevState: any, formData: FormData) {
       return { success: false, error: 'Please fill in Title, Author, Category, Condition, and Description.' };
     }
 
-    // Retrieve seller's location from profile
     let sellerProfile = await getProfileByUserId(session.id);
     const city = sellerProfile?.city || 'Chennai';
     const area = sellerProfile?.area || 'Adyar';
