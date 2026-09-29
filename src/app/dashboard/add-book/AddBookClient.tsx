@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { addBookAction, getAiChatPricePredictionAction } from '../../../actions/bookActions';
-import { Brain, HelpCircle, AlertCircle, Sparkles, Upload, Send, RefreshCw, CheckCircle2, Info } from 'lucide-react';
+import { addBookAction, getAiChatPricePredictionAction, lookupIsbnAction } from '../../../actions/bookActions';
+import { Brain, HelpCircle, AlertCircle, Sparkles, Upload, Send, RefreshCw, CheckCircle2, Info, Search } from 'lucide-react';
 
 interface FormState {
   success: boolean;
@@ -50,6 +50,8 @@ export default function AddBookClient() {
   const [category, setCategory] = useState('Programming');
   const [subject, setSubject] = useState('');
   const [isbn, setIsbn] = useState('');
+  const [isLookingUpIsbn, setIsLookingUpIsbn] = useState(false);
+  const [isbnSource, setIsbnSource] = useState<string | null>(null);
   const [edition, setEdition] = useState<number>(1);
   const [publicationYear, setPublicationYear] = useState<number>(new Date().getFullYear());
   const [originalPrice, setOriginalPrice] = useState<number>(0);
@@ -259,17 +261,59 @@ export default function AddBookClient() {
               </div>
 
               {/* ISBN */}
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">ISBN Number</label>
-                <input
-                  name="isbn"
-                  type="text"
-                  required
-                  value={isbn}
-                  onChange={(e) => setIsbn(e.target.value)}
-                  placeholder="e.g. 9781593279509"
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 bg-white font-medium"
-                />
+              <div className="space-y-1 sm:col-span-2">
+                <div className="flex justify-between items-center">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">ISBN Number (Real-Time Lookup)</label>
+                  {isbnSource && (
+                    <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100 flex items-center gap-1">
+                      <Sparkles className="w-3 h-3 text-emerald-500" />
+                      <span>Source: {isbnSource}</span>
+                    </span>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    name="isbn"
+                    type="text"
+                    required
+                    value={isbn}
+                    onChange={(e) => setIsbn(e.target.value)}
+                    placeholder="e.g. 9781593279509 or 9780132350884"
+                    className="flex-1 px-3 py-2 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 bg-white font-medium"
+                  />
+                  <button
+                    type="button"
+                    disabled={isLookingUpIsbn || !isbn.trim()}
+                    onClick={async () => {
+                      setIsLookingUpIsbn(true);
+                      try {
+                        const res = await lookupIsbnAction(isbn);
+                        if (res.success && res.metadata) {
+                          if (res.metadata.title) setTitle(res.metadata.title);
+                          if (res.metadata.author) setAuthor(res.metadata.author);
+                          if (res.metadata.publishYear) setPublicationYear(res.metadata.publishYear);
+                          if (res.metadata.category) setCategory(res.metadata.category);
+                          setIsbnSource(res.metadata.source);
+                        } else {
+                          alert(res.error || 'No metadata found. Enter details manually.');
+                          setIsbnSource('BookBridge SQLite Market Data');
+                        }
+                      } catch (e) {
+                        setIsbnSource('BookBridge SQLite Market Data');
+                      } finally {
+                        setIsLookingUpIsbn(false);
+                      }
+                    }}
+                    className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 text-white font-bold text-xs rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
+                  >
+                    {isLookingUpIsbn ? (
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin text-blue-400" />
+                    ) : (
+                      <Search className="w-3.5 h-3.5 text-blue-400" />
+                    )}
+                    <span>{isLookingUpIsbn ? 'Querying API...' : 'Lookup ISBN'}</span>
+                  </button>
+                </div>
               </div>
 
               {/* Edition */}

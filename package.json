@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "db:init": "tsx -e \"import { initDatabase } from './src/lib/db/sqliteDb.ts'; initDatabase(); console.log('Database initialized successfully');\"",
+    "db:seed": "tsx -e \"import { initDatabase } from './src/lib/db/sqliteDb.ts'; initDatabase(); console.log('Database seeded successfully');\""
   },
   "dependencies": {
     "@tensorflow/tfjs": "^4.22.0",
