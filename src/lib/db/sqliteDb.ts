@@ -386,6 +386,63 @@ export function initDatabase() {
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 
+    -- 24. Seller UPI IDs table
+    CREATE TABLE IF NOT EXISTS seller_upi (
+      id TEXT PRIMARY KEY,
+      user_id TEXT UNIQUE NOT NULL,
+      upi_id TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+
+    -- 25. Chat Conversations table
+    CREATE TABLE IF NOT EXISTS chat_conversations (
+      id TEXT PRIMARY KEY,
+      book_id TEXT NOT NULL,
+      buyer_id TEXT NOT NULL,
+      seller_id TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (book_id) REFERENCES books(id),
+      FOREIGN KEY (buyer_id) REFERENCES users(id),
+      FOREIGN KEY (seller_id) REFERENCES users(id)
+    );
+
+    -- 26. Chat Messages table
+    CREATE TABLE IF NOT EXISTS chat_messages (
+      id TEXT PRIMARY KEY,
+      conversation_id TEXT NOT NULL,
+      sender_id TEXT NOT NULL,
+      message TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (conversation_id) REFERENCES chat_conversations(id) ON DELETE CASCADE,
+      FOREIGN KEY (sender_id) REFERENCES users(id)
+    );
+
+    -- 27. Delivery Pricing Tiers table (Admin Configurable)
+    CREATE TABLE IF NOT EXISTS delivery_pricing (
+      id TEXT PRIMARY KEY,
+      min_distance REAL NOT NULL,
+      max_distance REAL NOT NULL,
+      customer_charge REAL NOT NULL,
+      staff_earning REAL NOT NULL,
+      status TEXT DEFAULT 'ACTIVE',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    -- 28. Delivery Checkpoints Tracking table
+    CREATE TABLE IF NOT EXISTS delivery_tracking (
+      id TEXT PRIMARY KEY,
+      delivery_id TEXT NOT NULL,
+      status TEXT NOT NULL,
+      location_name TEXT NOT NULL,
+      latitude REAL,
+      longitude REAL,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (delivery_id) REFERENCES deliveries(id) ON DELETE CASCADE
+    );
+
     -- Create Indexes for Query Performance
     CREATE INDEX IF NOT EXISTS idx_books_owner ON books(owner_id);
     CREATE INDEX IF NOT EXISTS idx_books_category ON books(category);
@@ -395,6 +452,7 @@ export function initDatabase() {
     CREATE INDEX IF NOT EXISTS idx_deliveries_staff ON deliveries(staff_id);
     CREATE INDEX IF NOT EXISTS idx_rentals_renter ON rentals(renter_id);
     CREATE INDEX IF NOT EXISTS idx_search_query ON search_activity(query);
+    CREATE INDEX IF NOT EXISTS idx_chat_conv ON chat_conversations(book_id, buyer_id, seller_id);
   `);
 
   // Initialize delivery settings default row if missing

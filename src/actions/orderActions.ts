@@ -8,6 +8,8 @@ import { createDelivery, getDeliveryByOrderId, getDeliveryById, updateDelivery, 
 import { createNotification } from '../lib/db/notifications';
 import { getSession } from '../lib/auth/session';
 import { recommendDeliveryStaff } from '../lib/utils/deliveryStaffRules';
+import { getSellerUpiByUserId } from '../lib/db/sellerUpi';
+import { sendOrderConfirmationEmail } from '../lib/utils/emailNotifier';
 import { revalidatePath } from 'next/cache';
 
 /**
@@ -94,22 +96,42 @@ export async function createOrderAction(
       });
     }
 
-    // 5. Notifications
+    // 5. Notifications & Email Dispatch
+    const sellerUpiId = await getSellerUpiByUserId(book.ownerId);
+
     await createNotification(
       book.ownerId,
       'Book Ordered!',
-      `Your book "${book.title}" has been ordered by ${session.name}. Method: ${deliveryMethod}.`
+      `Your book "${book.title}" has been ordered by ${session.name}. Method: ${deliveryMethod}. Seller UPI: ${sellerUpiId}.`
     );
 
     await createNotification(
       session.id,
       'Order Placed successfully!',
-      `Your order for "${book.title}" has been placed. Order ID: ${newOrder.id}.`
+      `Your order for "${book.title}" has been placed. Order ID: ${newOrder.id}. Payment: ${paymentMethod === 'ONLINE' ? 'Demo UPI Payment' : 'COD'}.`
     );
+
+    // Send Real Email Confirmation
+    if (session.email) {
+      const deliveryFee = deliveryMethod === 'DELIVERY' ? 40 : 0;
+      await sendOrderConfirmationEmail({
+        buyerEmail: session.email,
+        buyerName: session.name,
+        orderId: newOrder.id,
+        bookTitle: book.title,
+        sellerName: seller.name,
+        sellerUpiId,
+        bookAmount: book.expectedPrice,
+        deliveryCharge: deliveryFee,
+        totalAmount: book.expectedPrice + deliveryFee,
+        paymentMethod,
+        orderStatus,
+      }).catch(err => console.warn('Email dispatch warning:', err));
+    }
 
     revalidatePath('/dashboard/orders');
     revalidatePath('/dashboard/sales');
-    return { success: true, orderId: newOrder.id };
+    return { success: true, orderId: newOrder.id, sellerUpiId };
   } catch (error: any) {
     console.error('Checkout error:', error);
     return { success: false, error: error.message || 'Failed to place order.' };

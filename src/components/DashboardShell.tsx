@@ -75,6 +75,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
       { label: 'Book Donations', href: '/dashboard/donations', icon: Gift },
       { label: 'Book Requests', href: '/dashboard/requests', icon: MessageSquarePlus },
       { label: 'Exchange', href: '/dashboard/exchange', icon: RefreshCw },
+      { label: 'Chat / Messages', href: '/dashboard/chat', icon: MessageSquarePlus },
       { label: 'Delivery Tracking', href: '/dashboard/tracking', icon: Truck },
       { label: 'Payment History', href: '/dashboard/payment-history', icon: CreditCard },
       { label: 'Notifications', href: '/dashboard/notifications', icon: Bell },

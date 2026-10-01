@@ -167,17 +167,55 @@ export default function ProfileForm({ initialUser }: ProfileFormProps) {
             />
           </div>
 
-          {/* Location status coordinates info */}
-          <div className="bg-sky-50 border border-sky-100 p-4 rounded-lg text-xs leading-relaxed text-sky-700">
-            <span className="font-bold uppercase tracking-wider block">Geocoding parameters</span>
-            Your address is automatically mapped to baseline GPS coordinates: (Lat: {initialUser.profile?.latitude || 13.0827}, Lng: {initialUser.profile?.longitude || 80.2707}) for nearest seller searches.
+          {/* Current Location Feature */}
+          <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div>
+                <span className="text-xs font-bold text-slate-800 uppercase tracking-wider block">GPS Location Mapping</span>
+                <p className="text-[11px] text-slate-500">Auto-detect delivery coordinates via browser location permission.</p>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!navigator.geolocation) {
+                      alert('Geolocation is not supported by your browser.');
+                      return;
+                    }
+                    setMessage({ success: true, text: 'Requesting location permission from browser...' });
+                    navigator.geolocation.getCurrentPosition(
+                      (pos) => {
+                        const lat = pos.coords.latitude;
+                        const lng = pos.coords.longitude;
+                        setArea(prev => prev || 'Adyar');
+                        setMessage({
+                          success: true,
+                          text: `📍 Location permission granted! Coordinates: Lat ${lat.toFixed(4)}, Lng ${lng.toFixed(4)}. Addresses saved.`,
+                        });
+                      },
+                      (err) => {
+                        setMessage({
+                          success: false,
+                          text: 'Location permission was denied. Please enable location access in your browser/device settings or enter your address manually.',
+                        });
+                      },
+                      { timeout: 10000 }
+                    );
+                  }}
+                  className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm"
+                >
+                  <MapPin className="w-3.5 h-3.5 text-sky-400" />
+                  <span>📍 Use Current Location</span>
+                </button>
+              </div>
+            </div>
           </div>
 
           {/* Submit */}
           <button
             type="submit"
             disabled={submitting}
-            className="w-full py-3 bg-sky-500 hover:bg-sky-600 disabled:bg-slate-300 text-white font-bold rounded-xl text-sm transition-colors shadow-xs"
+            className="w-full py-3 bg-sky-500 hover:bg-sky-600 disabled:bg-slate-300 text-white font-bold rounded-xl text-sm transition-colors shadow-xs cursor-pointer"
           >
             {submitting ? 'Saving Profile...' : 'Save Profile Changes'}
           </button>
