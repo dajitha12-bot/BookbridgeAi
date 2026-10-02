@@ -33,9 +33,69 @@ function mapRowToBook(row: any): Book {
   } as any;
 }
 
+export interface BookImageRecord {
+  id: string;
+  bookId: string;
+  imageUrl: string;
+  imageType: string;
+  displayOrder: number;
+  isPrimary: boolean;
+}
+
+export function getBookImages(bookId: string): BookImageRecord[] {
+  try {
+    const rows = db.prepare('SELECT * FROM book_images WHERE book_id = ? ORDER BY display_order ASC').all(bookId);
+    return rows.map((r: any) => ({
+      id: r.id,
+      bookId: r.book_id,
+      imageUrl: r.image_url,
+      imageType: r.image_type || 'Cover Page',
+      displayOrder: r.display_order || 1,
+      isPrimary: Boolean(r.is_primary),
+    }));
+  } catch (e) {
+    return [];
+  }
+}
+
+export function saveBookImages(
+  bookId: string,
+  images: Array<{ imageUrl: string; imageType?: string; displayOrder?: number; isPrimary?: boolean }>
+) {
+  try {
+    db.prepare('DELETE FROM book_images WHERE book_id = ?').run(bookId);
+    const stmt = db.prepare(`
+      INSERT INTO book_images (id, book_id, image_url, image_type, display_order, is_primary)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `);
+
+    images.forEach((img, idx) => {
+      stmt.run(
+        `img_${generateId()}`,
+        bookId,
+        img.imageUrl,
+        img.imageType || (idx === 0 ? 'Cover Page' : idx === 1 ? 'Spine' : idx === 2 ? 'Inside Pages' : 'Back Cover'),
+        img.displayOrder || idx + 1,
+        img.isPrimary ? 1 : idx === 0 ? 1 : 0
+      );
+    });
+  } catch (e) {
+    console.error('Failed to save book images:', e);
+  }
+}
+
 export async function getAllBooks(): Promise<Book[]> {
   const rows = db.prepare('SELECT * FROM books ORDER BY created_at DESC').all();
-  return rows.map(mapRowToBook);
+  return rows.map((row: any) => {
+    const b = mapRowToBook(row);
+    const images = getBookImages(b.id);
+    (b as any).images = images;
+    if (images.length > 0) {
+      const primary = images.find(img => img.isPrimary) || images[0];
+      if (primary) b.imageUrl = primary.imageUrl;
+    }
+    return b;
+  });
 }
 
 export async function getBookById(id: string): Promise<Book | null> {
@@ -49,13 +109,29 @@ export async function getBookById(id: string): Promise<Book | null> {
     // Ignore non-fatal log error
   }
 
-  return mapRowToBook(row);
+  const b = mapRowToBook(row);
+  const images = getBookImages(b.id);
+  (b as any).images = images;
+  if (images.length > 0) {
+    const primary = images.find(img => img.isPrimary) || images[0];
+    if (primary) b.imageUrl = primary.imageUrl;
+  }
+  return b;
 }
 
 export async function getBooksByOwner(ownerId: string): Promise<Book[]> {
   // Return books owned by exact ownerId or normalized fallback user
   const rows = db.prepare("SELECT * FROM books WHERE owner_id = ? OR (owner_id = 'usr-user1' AND ? = 'usr-user1') ORDER BY created_at DESC").all(ownerId, ownerId);
-  return rows.map(mapRowToBook);
+  return rows.map((row: any) => {
+    const b = mapRowToBook(row);
+    const images = getBookImages(b.id);
+    (b as any).images = images;
+    if (images.length > 0) {
+      const primary = images.find(img => img.isPrimary) || images[0];
+      if (primary) b.imageUrl = primary.imageUrl;
+    }
+    return b;
+  });
 }
 
 export async function createBook(bookData: Omit<Book, 'id' | 'createdAt' | 'status'> & Partial<Book>): Promise<Book> {

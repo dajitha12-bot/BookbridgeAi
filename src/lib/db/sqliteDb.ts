@@ -473,6 +473,55 @@ export function initDatabase() {
       FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE
     );
 
+    -- 31. User Locations Table
+    CREATE TABLE IF NOT EXISTS user_locations (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      latitude REAL NOT NULL,
+      longitude REAL NOT NULL,
+      accuracy REAL,
+      address TEXT,
+      city TEXT,
+      state TEXT,
+      pincode TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+
+    -- 32. Book Images Table
+    CREATE TABLE IF NOT EXISTS book_images (
+      id TEXT PRIMARY KEY,
+      book_id TEXT NOT NULL,
+      image_url TEXT NOT NULL,
+      image_type TEXT DEFAULT 'Cover Page',
+      display_order INTEGER DEFAULT 1,
+      is_primary BOOLEAN DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE
+    );
+
+    -- 33. Assistant Chats Table
+    CREATE TABLE IF NOT EXISTS assistant_chats (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+
+    -- 34. Assistant Messages Table
+    CREATE TABLE IF NOT EXISTS assistant_messages (
+      id TEXT PRIMARY KEY,
+      chat_id TEXT NOT NULL,
+      sender TEXT NOT NULL,
+      message TEXT NOT NULL,
+      intent TEXT,
+      metadata_json TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (chat_id) REFERENCES assistant_chats(id) ON DELETE CASCADE
+    );
+
     -- Create Indexes for Query Performance
     CREATE INDEX IF NOT EXISTS idx_books_owner ON books(owner_id);
     CREATE INDEX IF NOT EXISTS idx_books_category ON books(category);
@@ -485,6 +534,10 @@ export function initDatabase() {
     CREATE INDEX IF NOT EXISTS idx_chat_conv ON chat_conversations(book_id, buyer_id, seller_id);
     CREATE INDEX IF NOT EXISTS idx_staff_earnings_staff ON staff_earnings(staff_id);
     CREATE INDEX IF NOT EXISTS idx_tracking_events_order ON delivery_tracking_events(order_id);
+    CREATE INDEX IF NOT EXISTS idx_user_locations_user ON user_locations(user_id);
+    CREATE INDEX IF NOT EXISTS idx_book_images_book ON book_images(book_id);
+    CREATE INDEX IF NOT EXISTS idx_assistant_chats_user ON assistant_chats(user_id);
+    CREATE INDEX IF NOT EXISTS idx_assistant_messages_chat ON assistant_messages(chat_id);
   `);
 
   // Initialize delivery settings default row if missing

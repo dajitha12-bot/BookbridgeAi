@@ -35,6 +35,8 @@ import {
   Package,
 } from 'lucide-react';
 
+import BookBridgeAssistantWidget from './BookBridgeAssistantWidget';
+
 interface SidebarItem {
   label: string;
   href: string;
@@ -282,6 +284,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
           {/* Main Viewport Container */}
           <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
             {children}
+            <BookBridgeAssistantWidget />
           </main>
         </div>
       </div>

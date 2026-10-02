@@ -17,12 +17,19 @@ import {
   BarChart2,
   TrendingUp,
   Check,
+  Camera,
+  Image as ImageIcon,
+  Trash2,
+  Star,
+  Plus,
 } from 'lucide-react';
 
-interface FormState {
-  success: boolean;
-  error?: string;
-  bookId?: string;
+interface BookImageItem {
+  id: string;
+  imageUrl: string;
+  imageType: string;
+  isPrimary: boolean;
+  displayOrder: number;
 }
 
 interface ChatMessage {
@@ -37,22 +44,6 @@ export default function AddBookClient() {
 
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setIsPending(true);
-    setError(null);
-    const formData = new FormData(e.currentTarget);
-    const res = await addBookAction(null, formData);
-    if (res.success) {
-      alert('Book listed successfully!');
-      router.push('/dashboard/my-books');
-      router.refresh();
-    } else {
-      setError(res.error || 'Failed to list book.');
-    }
-    setIsPending(false);
-  };
 
   // Form Fields State
   const [title, setTitle] = useState('');
@@ -74,6 +65,9 @@ export default function AddBookClient() {
   const [exchangeAvailable, setExchangeAvailable] = useState(true);
   const [donationAvailable, setDonationAvailable] = useState(false);
 
+  // Multiple Book Images State (Max 5)
+  const [bookImages, setBookImages] = useState<BookImageItem[]>([]);
+
   // Smart Book Fair Price Assistant State
   const [isAnalyzingPrice, setIsAnalyzingPrice] = useState(false);
   const [priceAnalysisResult, setPriceAnalysisResult] = useState<any | null>(null);
@@ -82,7 +76,7 @@ export default function AddBookClient() {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
     {
       sender: 'ai',
-      text: 'Hello! I am your BookBridge AI Assistant 🤖. Describe your book or upload a photo, and I will autofill the book details and predict a fair market price!',
+      text: 'Hello! I am your BookBridge Assistant 🤖. Upload cover photos or describe your book, and I will autofill details and suggest fair resale pricing!',
     },
   ]);
   const [userInputText, setUserInputText] = useState('');
@@ -98,7 +92,90 @@ export default function AddBookClient() {
     scrollToBottom();
   }, [chatMessages, isAiProcessing]);
 
-  // Calculate book age dynamically from Purchase Date (formatted with years/months and total days)
+  // Multiple Image Upload Handler
+  const handleMultipleImagesUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    if (bookImages.length + files.length > 5) {
+      alert('Maximum 5 photos allowed per book listing.');
+      return;
+    }
+
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    const maxSizeBytes = 5 * 1024 * 1024; // 5 MB limit
+
+    files.forEach((file) => {
+      if (!allowedTypes.includes(file.type.toLowerCase())) {
+        alert(`File "${file.name}" is not supported. Please upload JPG, PNG, or WEBP images.`);
+        return;
+      }
+      if (file.size > maxSizeBytes) {
+        alert(`File "${file.name}" exceeds the 5 MB size limit.`);
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64 = reader.result as string;
+        const defaultLabels = ['Cover Page', 'Spine', 'Inside Pages', 'Back Cover', 'Page Condition'];
+
+        setBookImages((prev) => {
+          const isFirst = prev.length === 0;
+          const assignedLabel = defaultLabels[prev.length] || 'Other';
+          const updated = [
+            ...prev,
+            {
+              id: `img_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+              imageUrl: base64,
+              imageType: assignedLabel,
+              isPrimary: isFirst,
+              displayOrder: prev.length + 1,
+            },
+          ];
+          const primary = updated.find((img) => img.isPrimary) || updated[0];
+          if (primary) setImageUrl(primary.imageUrl);
+          return updated;
+        });
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  // Set Primary Image
+  const handleSetPrimaryImage = (id: string) => {
+    setBookImages((prev) => {
+      const updated = prev.map((img) => ({
+        ...img,
+        isPrimary: img.id === id,
+      }));
+      const primary = updated.find((img) => img.id === id);
+      if (primary) setImageUrl(primary.imageUrl);
+      return updated;
+    });
+  };
+
+  // Remove Image
+  const handleRemoveImage = (id: string) => {
+    setBookImages((prev) => {
+      const filtered = prev.filter((img) => img.id !== id);
+      // Re-assign primary if primary was removed
+      if (filtered.length > 0 && !filtered.some((img) => img.isPrimary)) {
+        filtered[0].isPrimary = true;
+        setImageUrl(filtered[0].imageUrl);
+      } else if (filtered.length === 0) {
+        setImageUrl('');
+      }
+      return filtered.map((img, idx) => ({ ...img, displayOrder: idx + 1 }));
+    });
+  };
+
+  // Change Image Label
+  const handleChangeImageLabel = (id: string, newLabel: string) => {
+    setBookImages((prev) => prev.map((img) => (img.id === id ? { ...img, imageType: newLabel } : img)));
+  };
+
+  // Calculate book age dynamically from Purchase Date
   const calculateBookAge = (dateStr: string) => {
     if (!dateStr) return null;
     const purchase = new Date(dateStr);
@@ -125,6 +202,7 @@ export default function AddBookClient() {
   const handleAnalyzePrice = async () => {
     setIsAnalyzingPrice(true);
     try {
+      const primaryPhoto = bookImages.find((i) => i.isPrimary)?.imageUrl || imageUrl || imagePreview || null;
       const res = await analyzeFairPriceAction({
         title: title || 'Untitled Book',
         category: category || 'Programming',
@@ -133,7 +211,7 @@ export default function AddBookClient() {
         purchaseDate: purchaseDate || new Date().toISOString().split('T')[0],
         condition: condition || 'GOOD',
         edition: edition || 1,
-        imageUrl: imageUrl || imagePreview || null,
+        imageUrl: primaryPhoto,
       });
 
       if (res.success && res.prediction) {
@@ -151,18 +229,25 @@ export default function AddBookClient() {
     }
   };
 
-  // Image Upload Handler
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64 = reader.result as string;
-        setImagePreview(base64);
-        setImageUrl(base64);
-      };
-      reader.readAsDataURL(file);
+  // Form Submit Handler
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsPending(true);
+    setError(null);
+    const formData = new FormData(e.currentTarget);
+    formData.set('imagesJson', JSON.stringify(bookImages));
+    const primaryImg = bookImages.find((i) => i.isPrimary)?.imageUrl || imageUrl;
+    formData.set('imageUrl', primaryImg || '');
+
+    const res = await addBookAction(null, formData);
+    if (res.success) {
+      alert('Book listed successfully with uploaded photos!');
+      router.push('/dashboard/my-books');
+      router.refresh();
+    } else {
+      setError(res.error || 'Failed to list book.');
     }
+    setIsPending(false);
   };
 
   // Trigger AI Valuation Chat Analysis
@@ -235,7 +320,7 @@ export default function AddBookClient() {
       <div>
         <h1 className="text-2xl font-bold">List a Book for Sale or Exchange</h1>
         <p className="text-xs text-slate-500 mt-1">
-          Post your textbook details below. Use our Smart Book Fair Price Assistant to analyze dynamic age, market demand & fair resale pricing!
+          Upload up to 5 real book photos and use our Smart Book Fair Price Assistant to analyze dynamic age, market demand & fair resale pricing!
         </p>
       </div>
 
@@ -250,8 +335,119 @@ export default function AddBookClient() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Hidden Input Image URL */}
             <input type="hidden" name="imageUrl" value={imageUrl} />
+            <input type="hidden" name="imagesJson" value={JSON.stringify(bookImages)} />
+
+            {/* ================================================== */}
+            {/* PART 2 — MULTIPLE BOOK IMAGE UPLOAD SECTION */}
+            {/* ================================================== */}
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
+              <div className="flex justify-between items-center border-b border-slate-200 pb-2.5">
+                <div>
+                  <h3 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                    <ImageIcon className="w-4 h-4 text-sky-500" />
+                    Book Photos (Max 5 Photos)
+                  </h3>
+                  <p className="text-[11px] text-slate-500">Upload cover, spine, pages, or wear photos (JPG, PNG, WEBP max 5 MB)</p>
+                </div>
+                <div className="flex gap-2">
+                  <label
+                    className={`px-3 py-1.5 bg-sky-500 hover:bg-sky-600 text-white text-xs font-bold rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs ${
+                      bookImages.length >= 5 ? 'opacity-50 cursor-not-allowed' : ''
+                    }`}
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>+ Add Book Photos</span>
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      multiple
+                      disabled={bookImages.length >= 5}
+                      onChange={handleMultipleImagesUpload}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+              </div>
+
+              {/* Photos Grid & Thumbnails */}
+              {bookImages.length > 0 ? (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 pt-1">
+                  {bookImages.map((img) => (
+                    <div
+                      key={img.id}
+                      className={`relative bg-white border rounded-xl p-2 space-y-1.5 shadow-xs flex flex-col justify-between ${
+                        img.isPrimary ? 'border-sky-500 ring-2 ring-sky-500/20' : 'border-slate-200'
+                      }`}
+                    >
+                      {/* Badge Primary */}
+                      {img.isPrimary && (
+                        <span className="absolute top-1.5 left-1.5 bg-sky-500 text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded shadow-sm z-10 flex items-center gap-0.5">
+                          <Star className="w-2.5 h-2.5 fill-current" /> Primary
+                        </span>
+                      )}
+
+                      {/* Image Thumbnail */}
+                      <div className="w-full aspect-[3/4] rounded-lg overflow-hidden bg-slate-100 border border-slate-100 flex items-center justify-center">
+                        <img src={img.imageUrl} alt={img.imageType} className="w-full h-full object-cover" />
+                      </div>
+
+                      {/* Label Selector */}
+                      <select
+                        value={img.imageType}
+                        onChange={(e) => handleChangeImageLabel(img.id, e.target.value)}
+                        className="w-full text-[10px] font-bold text-slate-700 bg-slate-50 border border-slate-200 rounded px-1 py-1 focus:outline-none"
+                      >
+                        <option value="Cover Page">Cover Page</option>
+                        <option value="Back Cover">Back Cover</option>
+                        <option value="Spine">Spine</option>
+                        <option value="Inside Pages">Inside Pages</option>
+                        <option value="Page Condition">Page Condition</option>
+                        <option value="Other">Other</option>
+                      </select>
+
+                      {/* Controls */}
+                      <div className="flex justify-between items-center pt-1 border-t border-slate-100">
+                        {!img.isPrimary ? (
+                          <button
+                            type="button"
+                            onClick={() => handleSetPrimaryImage(img.id)}
+                            className="text-[9px] font-bold text-sky-600 hover:text-sky-700 bg-sky-50 px-1.5 py-0.5 rounded"
+                          >
+                            Set Main
+                          </button>
+                        ) : (
+                          <span className="text-[9px] font-bold text-emerald-600">Main Cover</span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveImage(img.id)}
+                          className="p-1 text-rose-500 hover:bg-rose-50 rounded transition-colors"
+                          title="Remove image"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="border-2 border-dashed border-slate-200 rounded-xl p-6 text-center space-y-2 bg-white">
+                  <Camera className="w-8 h-8 text-slate-300 mx-auto" />
+                  <p className="text-xs text-slate-500 font-medium">No book photos uploaded yet.</p>
+                  <label className="inline-block px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-lg cursor-pointer transition-colors">
+                    <span>Upload 1 to 5 Real Photos</span>
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      multiple
+                      onChange={handleMultipleImagesUpload}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+              )}
+            </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Title */}
@@ -476,7 +672,6 @@ export default function AddBookClient() {
                     donationAvailable ? 'bg-slate-50 text-slate-400 border-dashed' : ''
                   }`}
                 />
-                {/* Guaranteed Hidden Input so disabled status never blocks expectedPrice in FormData */}
                 <input type="hidden" name="expectedPrice" value={donationAvailable ? '0' : expectedPrice || '0'} />
               </div>
 
@@ -519,7 +714,6 @@ export default function AddBookClient() {
                 {/* Analysis Results Card */}
                 {priceAnalysisResult ? (
                   <div className="space-y-4 pt-1 animate-fade-in text-xs">
-                    {/* 3 Grid Layout for Analysis Card */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                       {/* 1. Book Analysis */}
                       <div className="bg-slate-900/70 border border-blue-800/40 rounded-xl p-3.5 space-y-2">
@@ -629,7 +823,6 @@ export default function AddBookClient() {
                       </div>
                     </div>
 
-                    {/* Explanation Banner */}
                     <div className="bg-blue-950/50 border border-blue-800/40 rounded-xl p-3 text-[11px] text-blue-200 flex items-start space-x-2">
                       <Info className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
                       <div className="space-y-0.5">
@@ -638,7 +831,6 @@ export default function AddBookClient() {
                       </div>
                     </div>
 
-                    {/* Action Buttons */}
                     <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-blue-900/40">
                       <button
                         type="button"
@@ -799,7 +991,16 @@ export default function AddBookClient() {
             <div className="flex items-center space-x-2">
               <label className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl cursor-pointer transition-colors" title="Upload cover image">
                 <Upload className="w-4 h-4" />
-                <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+                <input type="file" accept="image/*" className="hidden" onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                      setImagePreview(reader.result as string);
+                    };
+                    reader.readAsDataURL(file);
+                  }
+                }} />
               </label>
               <input
                 type="text"

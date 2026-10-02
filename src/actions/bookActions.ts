@@ -1,6 +1,6 @@
 'use server';
 
-import { getAllBooks, createBook, updateBook, deleteBook, getBookById } from '../lib/db/books';
+import { getAllBooks, createBook, updateBook, deleteBook, getBookById, saveBookImages } from '../lib/db/books';
 import { getProfileByUserId } from '../lib/db/users';
 import { getSession } from '../lib/auth/session';
 import { predictFairPrice } from '../lib/ai/pricePrediction';
@@ -260,6 +260,29 @@ export async function addBookAction(prevState: any, formData: FormData) {
     const donationAvailable = formData.get('donationAvailable') === 'true';
     const purchaseDate = (formData.get('purchaseDate') as string || new Date().toISOString().split('T')[0]).trim();
 
+    // Parse Multiple Images JSON
+    const imagesJsonStr = formData.get('imagesJson') as string;
+    let uploadedImages: Array<{ imageUrl: string; imageType: string; isPrimary: boolean; displayOrder: number }> = [];
+    if (imagesJsonStr) {
+      try {
+        uploadedImages = JSON.parse(imagesJsonStr);
+      } catch (e) {
+        // Non-fatal
+      }
+    }
+
+    if (uploadedImages.length === 0 && imageUrl) {
+      uploadedImages.push({
+        imageUrl,
+        imageType: 'Cover Page',
+        isPrimary: true,
+        displayOrder: 1,
+      });
+    }
+
+    const primaryImg = uploadedImages.find((img) => img.isPrimary) || uploadedImages[0];
+    const finalImageUrl = primaryImg ? primaryImg.imageUrl : imageUrl;
+
     if (!title || !author || !category || !condition || !description) {
       return { success: false, error: 'Please fill in Title, Author, Category, Condition, and Description.' };
     }
@@ -284,12 +307,17 @@ export async function addBookAction(prevState: any, formData: FormData) {
       city,
       area,
       status: 'AVAILABLE',
-      imageUrl,
+      imageUrl: finalImageUrl,
       deliveryAvailable,
       exchangeAvailable,
       donationAvailable,
       purchaseDate,
     });
+
+    // Save images into SQLite book_images table
+    if (uploadedImages.length > 0) {
+      saveBookImages(newBook.id, uploadedImages);
+    }
 
     revalidatePath('/dashboard/my-books');
     revalidatePath('/browse');
