@@ -31,24 +31,23 @@ export default function RentBookClient({ book }: RentBookClientProps) {
   const rentalFee = duration * ratePerDay;
   const totalAmount = baseFee + rentalFee + securityDeposit;
 
+  const [buyerEmailInput, setBuyerEmailInput] = useState('');
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsPending(true);
     setError(null);
 
-    if (paymentMethod === 'ONLINE') {
-      if (cardNumber.length < 16 || cardExpiry.length < 5 || cardCvv.length < 3) {
-        setError('Please fill in valid credit card information.');
-        setIsPending(false);
-        return;
-      }
-    }
-
-    const res = await createRentalAction(book.id, duration, paymentMethod, deliveryMethod);
+    const res = await createRentalAction(book.id, duration, paymentMethod, deliveryMethod, buyerEmailInput);
 
     if (res.success) {
-      alert(`Rental requested successfully! Total amount: ₹${totalAmount}.`);
-      router.push('/dashboard/rentals');
+      if (res.isOnlinePayment && res.orderId) {
+        // Redirect to payment confirmation & receipt download page
+        router.push(`/payment/confirm/${res.orderId}`);
+      } else {
+        alert(`Rental requested successfully! Total amount: ₹${totalAmount}.`);
+        router.push('/dashboard/rentals');
+      }
       router.refresh();
     } else {
       setError(res.error || 'Failed to request rental.');

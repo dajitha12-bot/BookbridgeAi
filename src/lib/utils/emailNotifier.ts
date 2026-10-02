@@ -31,24 +31,29 @@ function getEnvVar(key: string): string | undefined {
 }
 
 export async function sendEmailNotification(params: EmailParams): Promise<{ success: boolean; messageId?: string; error?: string }> {
-  const apiKey = getEnvVar('RESEND_API_KEY') || getEnvVar('EMAIL_API_KEY');
-  const smtpUser = getEnvVar('SMTP_USER') || getEnvVar('GMAIL_USER');
-  const rawPass = getEnvVar('SMTP_PASS') || getEnvVar('GMAIL_APP_PASSWORD') || '';
+  const smtpUser = getEnvVar('GMAIL_USER') || getEnvVar('SMTP_USER') || 'dajitha12@gmail.com';
+  const rawPass = getEnvVar('GMAIL_APP_PASSWORD') || getEnvVar('SMTP_PASS') || 'nwiwnyzhkgsffvuo';
   const smtpPass = rawPass.replace(/\s+/g, '');
-  const fromEmail = getEnvVar('EMAIL_FROM') || (smtpUser ? `BookBridge AI <${smtpUser}>` : 'BookBridge AI <notifications@bookbridge.com>');
+  const fromEmail = getEnvVar('EMAIL_FROM') || `BookBridge AI <${smtpUser}>`;
 
-  console.log(`[EMAIL NOTIFIER] Preparing email to ${params.to} | Subject: "${params.subject}" | SMTP User: ${smtpUser || 'NONE'}`);
+  console.log(`[EMAIL NOTIFIER] Dispatching email to recipient: ${params.to} | From: ${smtpUser} | Subject: "${params.subject}"`);
 
-  // 1. Send via Gmail / SMTP if credentials provided
-  if (smtpUser && smtpPass && !smtpPass.startsWith('your_')) {
+  // 1. Dispatch via Gmail SMTP
+  if (smtpUser && smtpPass) {
     try {
       const nodemailerModule = await import('nodemailer');
       const nodemailer = nodemailerModule.default || nodemailerModule;
       const transporter = nodemailer.createTransport({
         service: 'gmail',
+        host: 'smtp.gmail.com',
+        port: 465,
+        secure: true,
         auth: {
           user: smtpUser,
           pass: smtpPass,
+        },
+        tls: {
+          rejectUnauthorized: false,
         },
       });
 
@@ -59,7 +64,7 @@ export async function sendEmailNotification(params: EmailParams): Promise<{ succ
         html: params.html,
       });
 
-      console.log(`[EMAIL NOTIFIER] Email sent via Gmail/SMTP successfully to ${params.to}! Message ID: ${info.messageId}`);
+      console.log(`[EMAIL NOTIFIER] Email sent via Gmail SMTP successfully to ${params.to}! Message ID: ${info.messageId}`);
       return { success: true, messageId: info.messageId };
     } catch (err: any) {
       console.error(`[EMAIL NOTIFIER] Gmail SMTP dispatch error: ${err.message}`);
@@ -67,37 +72,6 @@ export async function sendEmailNotification(params: EmailParams): Promise<{ succ
     }
   }
 
-  // 2. Send via Resend API if API key provided
-  if (apiKey && !apiKey.startsWith('your_')) {
-    try {
-      const response = await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          from: fromEmail,
-          to: [params.to],
-          subject: params.subject,
-          html: params.html,
-        }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        console.log(`[EMAIL NOTIFIER] Email sent via Resend API successfully! Message ID: ${data.id}`);
-        return { success: true, messageId: data.id };
-      } else {
-        const errText = await response.text();
-        console.warn(`[EMAIL NOTIFIER] Resend API returned status ${response.status}: ${errText}`);
-      }
-    } catch (err: any) {
-      console.warn(`[EMAIL NOTIFIER] Resend fetch error: ${err.message}`);
-    }
-  }
-
-  console.log(`[EMAIL NOTIFIER] (Development Fallback) Email logged for ${params.to}. To enable direct Gmail sending, add GMAIL_USER and GMAIL_APP_PASSWORD in .env.local.`);
   return {
     success: true,
     messageId: `log_${Date.now()}`,
@@ -105,7 +79,7 @@ export async function sendEmailNotification(params: EmailParams): Promise<{ succ
 }
 
 /**
- * Send Buyer Order Confirmation Email Template
+ * Send Buyer Order / Rental Confirmation Email Template
  */
 export async function sendOrderConfirmationEmail(data: {
   buyerEmail: string;
@@ -119,58 +93,71 @@ export async function sendOrderConfirmationEmail(data: {
   totalAmount: number;
   paymentMethod: string;
   orderStatus: string;
+  paymentId?: string;
 }) {
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || getEnvVar('NEXT_PUBLIC_APP_URL') || 'http://localhost:3000';
+  const receiptUrl = data.paymentId 
+    ? `${baseUrl}/api/payments/receipt/${data.paymentId}`
+    : `${baseUrl}/payment/confirm/${data.orderId}`;
+
   const html = `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px;">
-      <h2 style="color: #0f172a; border-bottom: 2px solid #3b82f6; padding-bottom: 10px;">BookBridge – Order #${data.orderId} Confirmed</h2>
-      <p>Hello <strong>${data.buyerName}</strong>,</p>
-      <p>Your BookBridge order has been confirmed successfully!</p>
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 16px; background-color: #ffffff;">
+      <div style="text-align: center; border-bottom: 2px solid #2563eb; padding-bottom: 16px;">
+        <h2 style="color: #0f172a; margin: 0; font-size: 22px;">BookBridge AI – Payment Confirmed</h2>
+        <p style="color: #2563eb; font-size: 13px; font-weight: bold; margin-top: 4px;">Transaction Completed Successfully</p>
+      </div>
+
+      <p style="margin-top: 20px;">Hello <strong>${data.buyerName}</strong>,</p>
+      <p style="color: #334155; line-height: 1.5;">Your payment for order <strong>#${data.orderId}</strong> has been received and verified by BookBridge AI platform.</p>
       
-      <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+      <table style="width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 13px;">
         <tr style="background-color: #f8fafc;">
-          <td style="padding: 8px; border: 1px solid #cbd5e1; font-weight: bold;">Order ID</td>
-          <td style="padding: 8px; border: 1px solid #cbd5e1;">${data.orderId}</td>
+          <td style="padding: 10px; border: 1px solid #cbd5e1; font-weight: bold;">Order Reference</td>
+          <td style="padding: 10px; border: 1px solid #cbd5e1; font-family: monospace;">${data.orderId}</td>
         </tr>
         <tr>
-          <td style="padding: 8px; border: 1px solid #cbd5e1; font-weight: bold;">Book</td>
-          <td style="padding: 8px; border: 1px solid #cbd5e1;">${data.bookTitle}</td>
+          <td style="padding: 10px; border: 1px solid #cbd5e1; font-weight: bold;">Book Title</td>
+          <td style="padding: 10px; border: 1px solid #cbd5e1; font-weight: bold; color: #0f172a;">${data.bookTitle}</td>
         </tr>
         <tr style="background-color: #f8fafc;">
-          <td style="padding: 8px; border: 1px solid #cbd5e1; font-weight: bold;">Seller</td>
-          <td style="padding: 8px; border: 1px solid #cbd5e1;">${data.sellerName} (${data.sellerUpiId})</td>
+          <td style="padding: 10px; border: 1px solid #cbd5e1; font-weight: bold;">Seller Details</td>
+          <td style="padding: 10px; border: 1px solid #cbd5e1;">${data.sellerName} (${data.sellerUpiId})</td>
         </tr>
         <tr>
-          <td style="padding: 8px; border: 1px solid #cbd5e1; font-weight: bold;">Book Amount</td>
-          <td style="padding: 8px; border: 1px solid #cbd5e1;">₹${data.bookAmount}</td>
+          <td style="padding: 10px; border: 1px solid #cbd5e1; font-weight: bold;">Book Amount</td>
+          <td style="padding: 10px; border: 1px solid #cbd5e1;">₹${data.bookAmount}</td>
         </tr>
         <tr style="background-color: #f8fafc;">
-          <td style="padding: 8px; border: 1px solid #cbd5e1; font-weight: bold;">Delivery Charge</td>
-          <td style="padding: 8px; border: 1px solid #cbd5e1;">₹${data.deliveryCharge}</td>
+          <td style="padding: 10px; border: 1px solid #cbd5e1; font-weight: bold;">Delivery Fee</td>
+          <td style="padding: 10px; border: 1px solid #cbd5e1;">₹${data.deliveryCharge}</td>
         </tr>
-        <tr style="background-color: #eff6ff; font-weight: bold;">
-          <td style="padding: 8px; border: 1px solid #93c5fd; color: #1e3a8a;">Total Amount</td>
-          <td style="padding: 8px; border: 1px solid #93c5fd; color: #1e3a8a;">₹${data.totalAmount}</td>
+        <tr style="background-color: #ecfdf5; font-weight: bold;">
+          <td style="padding: 10px; border: 1px solid #a7f3d0; color: #065f46;">Total Amount Paid</td>
+          <td style="padding: 10px; border: 1px solid #a7f3d0; color: #065f46; font-size: 15px;">₹${data.totalAmount}</td>
         </tr>
         <tr>
-          <td style="padding: 8px; border: 1px solid #cbd5e1; font-weight: bold;">Payment Method</td>
-          <td style="padding: 8px; border: 1px solid #cbd5e1;">${data.paymentMethod === 'ONLINE' ? 'Demo UPI' : 'Cash On Delivery'}</td>
-        </tr>
-        <tr style="background-color: #f8fafc;">
-          <td style="padding: 8px; border: 1px solid #cbd5e1; font-weight: bold;">Order Status</td>
-          <td style="padding: 8px; border: 1px solid #cbd5e1;">Payment Confirmed / Waiting for Admin Confirmation</td>
+          <td style="padding: 10px; border: 1px solid #cbd5e1; font-weight: bold;">Order Status</td>
+          <td style="padding: 10px; border: 1px solid #cbd5e1; color: #d97706; font-weight: bold;">Waiting for Admin Confirmation</td>
         </tr>
       </table>
 
-      <div style="margin-top: 25px; text-align: center;">
-        <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard/orders" style="background-color: #2563eb; color: #ffffff; padding: 10px 20px; text-decoration: none; border-radius: 6px; font-weight: bold;">View Order</a>
+      <div style="margin: 30px 0; text-align: center; space-y: 10px;">
+        <a href="${receiptUrl}" target="_blank" style="background-color: #10b981; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 10px; font-weight: bold; font-size: 15px; display: inline-block; box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.2);">📄 Download / View Official PDF Receipt</a>
       </div>
-      <p style="font-size: 11px; color: #94a3b8; text-align: center; margin-top: 20px;">Thank you, <br/><strong>BookBridge Team</strong></p>
+
+      <div style="margin-top: 15px; text-align: center;">
+        <a href="${baseUrl}/dashboard/tracking" style="color: #2563eb; font-size: 13px; font-weight: bold; text-decoration: underline;">Track Order Status & Delivery Progress &rarr;</a>
+      </div>
+
+      <p style="font-size: 11px; color: #94a3b8; text-align: center; margin-top: 30px; border-top: 1px solid #f1f5f9; padding-top: 15px;">
+        Sent via dajitha12@gmail.com • BookBridge AI Marketplace & Logistics
+      </p>
     </div>
   `;
 
   return sendEmailNotification({
     to: data.buyerEmail,
-    subject: `BookBridge - Order #${data.orderId} Confirmed`,
+    subject: `BookBridge Payment Receipt - Order #${data.orderId} (₹${data.totalAmount})`,
     html,
   });
 }
@@ -187,60 +174,53 @@ export async function sendSellerOrderEmail(data: {
   bookAmount: number;
   sellerUpiId: string;
 }) {
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || getEnvVar('NEXT_PUBLIC_APP_URL') || 'http://localhost:3000';
   const html = `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px;">
-      <h2 style="color: #0f172a; border-bottom: 2px solid #10b981; padding-bottom: 10px;">BookBridge – Your Book Has Been Ordered</h2>
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 16px; background-color: #ffffff;">
+      <h2 style="color: #0f172a; border-bottom: 2px solid #10b981; padding-bottom: 12px; margin-top: 0;">BookBridge – Your Book Has Been Ordered</h2>
       <p>Hello <strong>${data.sellerName}</strong>,</p>
-      <p>Your book has been ordered on <strong>BookBridge</strong>!</p>
+      <p>Great news! Your book <strong>"${data.bookTitle}"</strong> has been ordered on <strong>BookBridge AI</strong>.</p>
       
-      <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+      <table style="width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 13px;">
         <tr style="background-color: #f8fafc;">
-          <td style="padding: 8px; border: 1px solid #cbd5e1; font-weight: bold;">Book</td>
-          <td style="padding: 8px; border: 1px solid #cbd5e1;">${data.bookTitle}</td>
+          <td style="padding: 10px; border: 1px solid #cbd5e1; font-weight: bold;">Book Title</td>
+          <td style="padding: 10px; border: 1px solid #cbd5e1;">${data.bookTitle}</td>
         </tr>
         <tr>
-          <td style="padding: 8px; border: 1px solid #cbd5e1; font-weight: bold;">Buyer</td>
-          <td style="padding: 8px; border: 1px solid #cbd5e1;">${data.buyerName}</td>
+          <td style="padding: 10px; border: 1px solid #cbd5e1; font-weight: bold;">Buyer Name</td>
+          <td style="padding: 10px; border: 1px solid #cbd5e1;">${data.buyerName}</td>
         </tr>
         <tr style="background-color: #f8fafc;">
-          <td style="padding: 8px; border: 1px solid #cbd5e1; font-weight: bold;">Order ID</td>
-          <td style="padding: 8px; border: 1px solid #cbd5e1;">${data.orderId}</td>
+          <td style="padding: 10px; border: 1px solid #cbd5e1; font-weight: bold;">Order Reference</td>
+          <td style="padding: 10px; border: 1px solid #cbd5e1; font-family: monospace;">${data.orderId}</td>
         </tr>
         <tr>
-          <td style="padding: 8px; border: 1px solid #cbd5e1; font-weight: bold;">Book Amount</td>
-          <td style="padding: 8px; border: 1px solid #cbd5e1;">₹${data.bookAmount}</td>
+          <td style="padding: 10px; border: 1px solid #cbd5e1; font-weight: bold;">Book Amount</td>
+          <td style="padding: 10px; border: 1px solid #cbd5e1; font-weight: bold; color: #059669;">₹${data.bookAmount}</td>
         </tr>
         <tr style="background-color: #f8fafc;">
-          <td style="padding: 8px; border: 1px solid #cbd5e1; font-weight: bold;">Payment Status</td>
-          <td style="padding: 8px; border: 1px solid #cbd5e1;">Successful (Demo UPI)</td>
-        </tr>
-        <tr>
-          <td style="padding: 8px; border: 1px solid #cbd5e1; font-weight: bold;">Seller UPI ID</td>
-          <td style="padding: 8px; border: 1px solid #cbd5e1;">${data.sellerUpiId}</td>
-        </tr>
-        <tr style="background-color: #f8fafc;">
-          <td style="padding: 8px; border: 1px solid #cbd5e1; font-weight: bold;">Order Status</td>
-          <td style="padding: 8px; border: 1px solid #cbd5e1;">Waiting for Admin Confirmation</td>
+          <td style="padding: 10px; border: 1px solid #cbd5e1; font-weight: bold;">Seller UPI ID</td>
+          <td style="padding: 10px; border: 1px solid #cbd5e1;">${data.sellerUpiId}</td>
         </tr>
       </table>
 
       <div style="margin-top: 25px; text-align: center;">
-        <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard/sales" style="background-color: #10b981; color: #ffffff; padding: 10px 20px; text-decoration: none; border-radius: 6px; font-weight: bold;">View Order</a>
+        <a href="${baseUrl}/dashboard/sales" style="background-color: #10b981; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 14px; display: inline-block;">View Order Details</a>
       </div>
-      <p style="font-size: 11px; color: #94a3b8; text-align: center; margin-top: 20px;">Thank you, <br/><strong>BookBridge Team</strong></p>
+      <p style="font-size: 11px; color: #94a3b8; text-align: center; margin-top: 25px;">Sent via dajitha12@gmail.com • BookBridge Team</p>
     </div>
   `;
 
   return sendEmailNotification({
     to: data.sellerEmail,
-    subject: `BookBridge - Your Book Has Been Ordered`,
+    subject: `BookBridge - Your Book "${data.bookTitle}" Ordered (#${data.orderId})`,
     html,
   });
 }
 
 /**
  * Send Payment Link Email to Buyer Template
- * Sent when order is created in PENDING state.
+ * Sent when order or rental is initiated.
  */
 export async function sendPaymentEmailToBuyer(data: {
   buyerEmail: string;
@@ -252,51 +232,60 @@ export async function sendPaymentEmailToBuyer(data: {
   deliveryCharge: number;
   totalAmount: number;
   paymentUrl: string;
+  paymentId?: string;
 }) {
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || getEnvVar('NEXT_PUBLIC_APP_URL') || 'http://localhost:3000';
+  const receiptUrl = data.paymentId 
+    ? `${baseUrl}/api/payments/receipt/${data.paymentId}`
+    : `${baseUrl}/payment/confirm/${data.orderId}`;
+
   const html = `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
-      <h2 style="color: #0f172a; border-bottom: 2px solid #0284c7; padding-bottom: 10px; margin-top: 0;">BookBridge – Complete Your Payment</h2>
-      <p>Hello <strong>${data.buyerName}</strong>,</p>
-      <p>Thank you for initiating your order on <strong>BookBridge</strong>! Please review your order details below and complete your payment:</p>
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 16px; background-color: #ffffff;">
+      <div style="text-align: center; border-bottom: 2px solid #0284c7; padding-bottom: 16px;">
+        <h2 style="color: #0f172a; margin: 0; font-size: 22px;">BookBridge AI – Payment & Receipt Request</h2>
+        <p style="color: #0284c7; font-size: 13px; font-weight: bold; margin-top: 4px;">Complete Payment to Generate Official PDF Receipt</p>
+      </div>
+
+      <p style="margin-top: 20px;">Hello <strong>${data.buyerName}</strong>,</p>
+      <p style="color: #334155; line-height: 1.5;">Thank you for initiating your order/rental for <strong>"${data.bookTitle}"</strong> on BookBridge AI. Please complete your payment below:</p>
       
-      <table style="width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 14px;">
+      <table style="width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 13px;">
         <tr style="background-color: #f8fafc;">
-          <td style="padding: 10px; border: 1px solid #cbd5e1; font-weight: bold;">Order ID</td>
-          <td style="padding: 10px; border: 1px solid #cbd5e1;">${data.orderId}</td>
+          <td style="padding: 10px; border: 1px solid #cbd5e1; font-weight: bold;">Order Reference</td>
+          <td style="padding: 10px; border: 1px solid #cbd5e1; font-family: monospace;">${data.orderId}</td>
         </tr>
         <tr>
           <td style="padding: 10px; border: 1px solid #cbd5e1; font-weight: bold;">Book Title</td>
-          <td style="padding: 10px; border: 1px solid #cbd5e1;">${data.bookTitle}</td>
+          <td style="padding: 10px; border: 1px solid #cbd5e1; font-weight: bold;">${data.bookTitle}</td>
         </tr>
         <tr style="background-color: #f8fafc;">
-          <td style="padding: 10px; border: 1px solid #cbd5e1; font-weight: bold;">Seller</td>
+          <td style="padding: 10px; border: 1px solid #cbd5e1; font-weight: bold;">Seller / Owner</td>
           <td style="padding: 10px; border: 1px solid #cbd5e1;">${data.sellerName}</td>
         </tr>
         <tr>
-          <td style="padding: 10px; border: 1px solid #cbd5e1; font-weight: bold;">Book Price</td>
+          <td style="padding: 10px; border: 1px solid #cbd5e1; font-weight: bold;">Book Price / Fee</td>
           <td style="padding: 10px; border: 1px solid #cbd5e1;">₹${data.bookAmount}</td>
         </tr>
         <tr style="background-color: #f8fafc;">
-          <td style="padding: 10px; border: 1px solid #cbd5e1; font-weight: bold;">Delivery Charge</td>
+          <td style="padding: 10px; border: 1px solid #cbd5e1; font-weight: bold;">Delivery Fee</td>
           <td style="padding: 10px; border: 1px solid #cbd5e1;">₹${data.deliveryCharge}</td>
         </tr>
         <tr style="background-color: #f0f9ff; font-weight: bold;">
-          <td style="padding: 10px; border: 1px solid #7dd3fc; color: #0369a1;">Total Amount</td>
+          <td style="padding: 10px; border: 1px solid #7dd3fc; color: #0369a1;">Total Amount Payable</td>
           <td style="padding: 10px; border: 1px solid #7dd3fc; color: #0369a1; font-size: 16px;">₹${data.totalAmount}</td>
         </tr>
       </table>
 
       <div style="margin: 30px 0; text-align: center;">
-        <a href="${data.paymentUrl}" style="background-color: #0284c7; color: #ffffff; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px; display: inline-block; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">PAY ₹${data.totalAmount}</a>
+        <a href="${data.paymentUrl}" style="background-color: #0284c7; color: #ffffff; padding: 14px 32px; text-decoration: none; border-radius: 10px; font-weight: bold; font-size: 16px; display: inline-block; box-shadow: 0 4px 6px -1px rgba(2, 132, 199, 0.2);">💳 PAY ₹${data.totalAmount} & VIEW RECEIPT</a>
       </div>
 
-      <p style="font-size: 12px; color: #64748b; text-align: center; margin-top: 20px; line-height: 1.5;">
-        Or copy and paste this link into your browser:<br/>
-        <a href="${data.paymentUrl}" style="color: #0284c7;">${data.paymentUrl}</a>
-      </p>
-      
+      <div style="margin-top: 15px; text-align: center;">
+        <a href="${receiptUrl}" target="_blank" style="color: #0284c7; font-size: 12px; font-weight: bold; text-decoration: underline;">Or View Receipt Download Page directly &rarr;</a>
+      </div>
+
       <p style="font-size: 11px; color: #94a3b8; text-align: center; margin-top: 25px; border-top: 1px solid #f1f5f9; padding-top: 15px;">
-        Demo UPI Payment • BookBridge AI Marketplace
+        Sent via dajitha12@gmail.com • BookBridge AI Marketplace
       </p>
     </div>
   `;
@@ -307,4 +296,3 @@ export async function sendPaymentEmailToBuyer(data: {
     html,
   });
 }
-
