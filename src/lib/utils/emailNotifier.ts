@@ -1,5 +1,3 @@
-import nodemailer from 'nodemailer';
-
 export interface EmailParams {
   to: string;
   subject: string;
@@ -18,6 +16,8 @@ export async function sendEmailNotification(params: EmailParams): Promise<{ succ
   // 1. Send via Gmail / SMTP if credentials provided
   if (smtpUser && smtpPass && !smtpPass.startsWith('your_')) {
     try {
+      const nodemailerModule = await import('nodemailer');
+      const nodemailer = nodemailerModule.default || nodemailerModule;
       const transporter = nodemailer.createTransport({
         service: 'gmail',
         auth: {
