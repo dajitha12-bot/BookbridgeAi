@@ -35,7 +35,7 @@ export default function PaymentConfirmClient({ initialData }: PaymentConfirmClie
   const { order, book, seller, sellerUpiId, buyer, payment, deliveryCharge, totalAmount } = initialData;
 
   const [buyerUpiId, setBuyerUpiId] = useState(
-    buyer.email ? `${buyer.email.split('@')[0]}@upi` : 'buyer@upi'
+    buyer.email ? `${buyer.email.split('@')[0]}@upi` : 'dajitha12@upi'
   );
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentResult, setPaymentResult] = useState<{
@@ -52,6 +52,39 @@ export default function PaymentConfirmClient({ initialData }: PaymentConfirmClie
         }
       : null
   );
+
+  // Automatically trigger payment processing when landing from email click link
+  React.useEffect(() => {
+    if (payment?.status !== 'PAID' && !paymentResult?.success && !isProcessing) {
+      setIsProcessing(true);
+      const defaultUpi = buyer.email ? `${buyer.email.split('@')[0]}@upi` : 'dajitha12@upi';
+      confirmOrderPaymentAction(order.id, defaultUpi)
+        .then((res) => {
+          if (res.success) {
+            setPaymentResult({
+              success: true,
+              transactionId: res.transactionId,
+              paymentId: res.paymentId,
+            });
+          } else {
+            setPaymentResult({
+              success: false,
+              error: res.error || 'Failed to auto-process payment.',
+            });
+          }
+        })
+        .catch((err: any) => {
+          console.error('Auto payment error:', err);
+          setPaymentResult({
+            success: false,
+            error: err.message || 'Auto payment process error.',
+          });
+        })
+        .finally(() => {
+          setIsProcessing(false);
+        });
+    }
+  }, []);
 
   const handleConfirmPayment = async (e: React.FormEvent) => {
     e.preventDefault();
