@@ -8,8 +8,9 @@ export interface EmailParams {
 export async function sendEmailNotification(params: EmailParams): Promise<{ success: boolean; messageId?: string; error?: string }> {
   const apiKey = process.env.RESEND_API_KEY || process.env.EMAIL_API_KEY;
   const smtpUser = process.env.SMTP_USER || process.env.GMAIL_USER;
-  const smtpPass = process.env.SMTP_PASS || process.env.GMAIL_APP_PASSWORD;
-  const fromEmail = process.env.EMAIL_FROM || smtpUser || 'BookBridge AI <notifications@bookbridge.com>';
+  const rawPass = process.env.SMTP_PASS || process.env.GMAIL_APP_PASSWORD || '';
+  const smtpPass = rawPass.replace(/\s+/g, '');
+  const fromEmail = process.env.EMAIL_FROM || (smtpUser ? `BookBridge AI <${smtpUser}>` : 'BookBridge AI <notifications@bookbridge.com>');
 
   console.log(`[EMAIL NOTIFIER] Preparing email to ${params.to} | Subject: "${params.subject}"`);
 
