@@ -118,6 +118,57 @@ export async function getSuggestedPriceAction(
 }
 
 /**
+ * Dedicated Smart Book Fair Price Assistant Action
+ * Computes analysis, dynamic age, market demand, and persists result to SQLite ai_predictions
+ */
+export async function analyzeFairPriceAction(input: {
+  title: string;
+  category: string;
+  isbn?: string;
+  originalPrice: number;
+  purchaseDate: string;
+  condition: string;
+  edition: number;
+  imageUrl?: string | null;
+}) {
+  try {
+    const session = await getSession();
+    const userId = session?.id || 'usr-user1';
+
+    const prediction = await predictFairPrice(input);
+
+    // Save prediction record to SQLite ai_predictions table
+    try {
+      const predId = `pred_${generateId()}`;
+      db.prepare(`
+        INSERT INTO ai_predictions (
+          id, book_id, user_id, title, visual_condition_score, predicted_fair_price, min_suggested_price, max_suggested_price, demand_score, confidence, features_json
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        predId,
+        null,
+        userId,
+        input.title || 'Book Listing',
+        85,
+        prediction.suggestedPrice,
+        prediction.minPrice,
+        prediction.maxPrice,
+        prediction.marketInfo.demandScore,
+        prediction.confidence,
+        JSON.stringify(prediction)
+      );
+    } catch (dbErr) {
+      console.error('Failed to log ai_prediction record to SQLite:', dbErr);
+    }
+
+    return { success: true, prediction };
+  } catch (error: any) {
+    return { success: false, error: error.message || 'Failed to analyze fair price' };
+  }
+}
+
+
+/**
  * Open Library ISBN Lookup Action
  */
 export async function lookupIsbnAction(isbn: string) {

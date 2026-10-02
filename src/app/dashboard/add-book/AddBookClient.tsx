@@ -2,18 +2,28 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { addBookAction, getAiChatPricePredictionAction, lookupIsbnAction } from '../../../actions/bookActions';
-import { Brain, HelpCircle, AlertCircle, Sparkles, Upload, Send, RefreshCw, CheckCircle2, Info, Search } from 'lucide-react';
+import { addBookAction, getAiChatPricePredictionAction, lookupIsbnAction, analyzeFairPriceAction } from '../../../actions/bookActions';
+import {
+  Brain,
+  AlertCircle,
+  Sparkles,
+  Upload,
+  Send,
+  RefreshCw,
+  CheckCircle2,
+  Info,
+  Search,
+  BookOpen,
+  BarChart2,
+  TrendingUp,
+  Check,
+} from 'lucide-react';
 
 interface FormState {
   success: boolean;
   error?: string;
   bookId?: string;
 }
-
-const initialState: FormState = {
-  success: false,
-};
 
 interface ChatMessage {
   sender: 'ai' | 'user';
@@ -24,7 +34,7 @@ interface ChatMessage {
 
 export default function AddBookClient() {
   const router = useRouter();
-  
+
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -64,12 +74,16 @@ export default function AddBookClient() {
   const [exchangeAvailable, setExchangeAvailable] = useState(true);
   const [donationAvailable, setDonationAvailable] = useState(false);
 
+  // Smart Book Fair Price Assistant State
+  const [isAnalyzingPrice, setIsAnalyzingPrice] = useState(false);
+  const [priceAnalysisResult, setPriceAnalysisResult] = useState<any | null>(null);
+
   // AI Assistant Chat State
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
     {
       sender: 'ai',
-      text: 'Hello! I am your BookBridge AI Assistant 🤖. Describe your book or upload a photo, and I will autofill the book details and predict a fair market price!'
-    }
+      text: 'Hello! I am your BookBridge AI Assistant 🤖. Describe your book or upload a photo, and I will autofill the book details and predict a fair market price!',
+    },
   ]);
   const [userInputText, setUserInputText] = useState('');
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -84,20 +98,58 @@ export default function AddBookClient() {
     scrollToBottom();
   }, [chatMessages, isAiProcessing]);
 
-  // Calculate book age dynamically from Purchase Date
+  // Calculate book age dynamically from Purchase Date (formatted with years/months and total days)
   const calculateBookAge = (dateStr: string) => {
     if (!dateStr) return null;
     const purchase = new Date(dateStr);
     const now = new Date();
+    const diffMs = Math.max(0, now.getTime() - purchase.getTime());
+    const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
     const diffMonths = (now.getFullYear() - purchase.getFullYear()) * 12 + (now.getMonth() - purchase.getMonth());
-    if (diffMonths <= 0) return 'Less than a month';
+    if (diffMonths <= 0) return `Less than a month (${days} days)`;
     const years = Math.floor(diffMonths / 12);
     const months = diffMonths % 12;
-    if (years === 0) return `${months} month${months > 1 ? 's' : ''}`;
-    return `${years} year${years > 1 ? 's' : ''}${months > 0 ? ` ${months} mo` : ''}`;
+
+    const yrsText = years === 1 ? '1 year' : `${years} years`;
+    const mosText = months === 1 ? '1 month' : `${months} months`;
+
+    if (years === 0) return `${mosText} (${days} days)`;
+    if (months === 0) return `${yrsText} (${days} days)`;
+    return `${yrsText} ${mosText} (${days} days)`;
   };
 
   const bookAgeStr = calculateBookAge(purchaseDate);
+
+  // Trigger Smart Book Fair Price Assistant Analysis
+  const handleAnalyzePrice = async () => {
+    setIsAnalyzingPrice(true);
+    try {
+      const res = await analyzeFairPriceAction({
+        title: title || 'Untitled Book',
+        category: category || 'Programming',
+        isbn: isbn || '',
+        originalPrice: originalPrice || 0,
+        purchaseDate: purchaseDate || new Date().toISOString().split('T')[0],
+        condition: condition || 'GOOD',
+        edition: edition || 1,
+        imageUrl: imageUrl || imagePreview || null,
+      });
+
+      if (res.success && res.prediction) {
+        setPriceAnalysisResult(res.prediction);
+        if (res.prediction.suggestedPrice && !expectedPrice) {
+          setExpectedPrice(res.prediction.suggestedPrice.toString());
+        }
+      } else {
+        alert(res.error || 'Failed to analyze fair price');
+      }
+    } catch (err) {
+      alert('An error occurred during price analysis');
+    } finally {
+      setIsAnalyzingPrice(false);
+    }
+  };
 
   // Image Upload Handler
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -124,9 +176,9 @@ export default function AddBookClient() {
     setUserInputText('');
     setImagePreview(null);
 
-    setChatMessages(prev => [
+    setChatMessages((prev) => [
       ...prev,
-      { sender: 'user', text: currentText, imagePreview: currentImg || undefined }
+      { sender: 'user', text: currentText, imagePreview: currentImg || undefined },
     ]);
 
     setIsAiProcessing(true);
@@ -140,7 +192,7 @@ export default function AddBookClient() {
 
       if (res.success && res.suggestion) {
         const sugg = res.suggestion;
-        
+
         if (sugg.title && !title) setTitle(sugg.title);
         if (sugg.author && !author) setAuthor(sugg.author);
         if (sugg.category) setCategory(sugg.category);
@@ -153,24 +205,24 @@ export default function AddBookClient() {
         if (sugg.suggestedPrice) setExpectedPrice(sugg.suggestedPrice.toString());
         if (sugg.description && !description) setDescription(sugg.description);
 
-        setChatMessages(prev => [
+        setChatMessages((prev) => [
           ...prev,
           {
             sender: 'ai',
             text: `Analyzed! Suggested fair resale price: ₹${sugg.suggestedPrice}. ${sugg.explanation}`,
-            suggestion: sugg
-          }
+            suggestion: sugg,
+          },
         ]);
       } else {
-        setChatMessages(prev => [
+        setChatMessages((prev) => [
           ...prev,
-          { sender: 'ai', text: res.error || 'Failed to analyze book details. Please fill the fields manually.' }
+          { sender: 'ai', text: res.error || 'Failed to analyze book details. Please fill the fields manually.' },
         ]);
       }
     } catch (err) {
-      setChatMessages(prev => [
+      setChatMessages((prev) => [
         ...prev,
-        { sender: 'ai', text: 'An error occurred during AI valuation. Please enter fields manually.' }
+        { sender: 'ai', text: 'An error occurred during AI valuation. Please enter fields manually.' },
       ]);
     } finally {
       setIsAiProcessing(false);
@@ -183,7 +235,7 @@ export default function AddBookClient() {
       <div>
         <h1 className="text-2xl font-bold">List a Book for Sale or Exchange</h1>
         <p className="text-xs text-slate-500 mt-1">
-          Post your textbook details below. Use the AI Assistant to automatically suggest fair pricing!
+          Post your textbook details below. Use our Smart Book Fair Price Assistant to analyze dynamic age, market demand & fair resale pricing!
         </p>
       </div>
 
@@ -240,8 +292,21 @@ export default function AddBookClient() {
                   onChange={(e) => setCategory(e.target.value)}
                   className="w-full px-3 py-2.5 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 bg-white font-semibold"
                 >
-                  {['Programming', 'Artificial Intelligence', 'Database', 'Web Development', 'Operating Systems', 'Computer Networks', 'Mathematics', 'Management', 'Novels', 'Competitive Exams'].map((cat) => (
-                    <option key={cat} value={cat}>{cat}</option>
+                  {[
+                    'Programming',
+                    'Artificial Intelligence',
+                    'Database',
+                    'Web Development',
+                    'Operating Systems',
+                    'Computer Networks',
+                    'Mathematics',
+                    'Management',
+                    'Novels',
+                    'Competitive Exams',
+                  ].map((cat) => (
+                    <option key={cat} value={cat}>
+                      {cat}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -412,7 +477,193 @@ export default function AddBookClient() {
                   }`}
                 />
                 {/* Guaranteed Hidden Input so disabled status never blocks expectedPrice in FormData */}
-                <input type="hidden" name="expectedPrice" value={donationAvailable ? '0' : (expectedPrice || '0')} />
+                <input type="hidden" name="expectedPrice" value={donationAvailable ? '0' : expectedPrice || '0'} />
+              </div>
+
+              {/* ================================================== */}
+              {/* SMART BOOK FAIR PRICE ASSISTANT SECTION */}
+              {/* ================================================== */}
+              <div className="sm:col-span-2 bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-950 text-white rounded-2xl p-5 shadow-lg border border-blue-900/40 space-y-4 my-2">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-blue-800/50 pb-3">
+                  <div className="flex items-center space-x-2.5">
+                    <div className="p-2 bg-blue-600/30 rounded-xl text-blue-300 border border-blue-500/30">
+                      <Sparkles className="w-5 h-5 text-blue-400 animate-pulse" />
+                    </div>
+                    <div>
+                      <h3 className="font-extrabold text-sm text-white tracking-wide">
+                        Smart Book Fair Price Assistant
+                      </h3>
+                      <p className="text-[11px] text-blue-200/80">Local AI price valuation model based on MRP, dynamic age & SQLite market demand</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={isAnalyzingPrice}
+                    onClick={handleAnalyzePrice}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 disabled:bg-slate-800 text-white text-xs font-bold rounded-xl transition-all shadow-md flex items-center justify-center space-x-1.5 cursor-pointer border border-blue-400/30"
+                  >
+                    {isAnalyzingPrice ? (
+                      <>
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin text-blue-200" />
+                        <span>Analyzing Book...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Brain className="w-3.5 h-3.5 text-blue-300" />
+                        <span>Analyze Book</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {/* Analysis Results Card */}
+                {priceAnalysisResult ? (
+                  <div className="space-y-4 pt-1 animate-fade-in text-xs">
+                    {/* 3 Grid Layout for Analysis Card */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      {/* 1. Book Analysis */}
+                      <div className="bg-slate-900/70 border border-blue-800/40 rounded-xl p-3.5 space-y-2">
+                        <div className="flex items-center space-x-1.5 text-blue-400 font-bold border-b border-slate-800 pb-1.5">
+                          <BookOpen className="w-4 h-4" />
+                          <span>Book Analysis</span>
+                        </div>
+                        <div className="space-y-1.5 text-[11px] text-slate-300">
+                          <div>
+                            <span className="text-slate-400 font-medium">Title:</span>{' '}
+                            <strong className="text-white">{priceAnalysisResult.bookAnalysis.title}</strong>
+                          </div>
+                          <div>
+                            <span className="text-slate-400 font-medium">ISBN:</span>{' '}
+                            <span className="font-mono text-slate-200">{priceAnalysisResult.bookAnalysis.isbn}</span>
+                          </div>
+                          <div>
+                            <span className="text-slate-400 font-medium">Original Price:</span>{' '}
+                            <span className="font-bold text-emerald-400">₹{priceAnalysisResult.bookAnalysis.originalPrice}</span>
+                          </div>
+                          <div>
+                            <span className="text-slate-400 font-medium">Purchase Date:</span>{' '}
+                            <span>{priceAnalysisResult.bookAnalysis.purchaseDate || 'Not provided'}</span>
+                          </div>
+                          <div>
+                            <span className="text-slate-400 font-medium">Book Age:</span>{' '}
+                            <span className="text-blue-300 font-bold bg-blue-950/60 px-1.5 py-0.5 rounded border border-blue-800/50">
+                              {priceAnalysisResult.bookAnalysis.ageFormatted}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-slate-400 font-medium">Condition:</span>{' '}
+                            <span className="text-amber-300 font-semibold">{priceAnalysisResult.bookAnalysis.condition.replace('_', ' ')}</span>
+                          </div>
+                          <div>
+                            <span className="text-slate-400 font-medium">Edition:</span>{' '}
+                            <span>Edition {priceAnalysisResult.bookAnalysis.edition}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 2. Market Information */}
+                      <div className="bg-slate-900/70 border border-blue-800/40 rounded-xl p-3.5 space-y-2">
+                        <div className="flex items-center space-x-1.5 text-blue-400 font-bold border-b border-slate-800 pb-1.5">
+                          <BarChart2 className="w-4 h-4" />
+                          <span>Market Information</span>
+                        </div>
+                        <div className="space-y-1.5 text-[11px] text-slate-300">
+                          <div>
+                            <span className="text-slate-400 font-medium">Reference Price:</span>{' '}
+                            <span className="font-bold text-white">₹{priceAnalysisResult.marketInfo.referencePrice}</span>
+                          </div>
+                          <div>
+                            <span className="text-slate-400 font-medium">Demand Score:</span>{' '}
+                            <span className="font-bold text-cyan-300">{priceAnalysisResult.marketInfo.demandScore}/100</span>
+                            <span className="ml-1.5 px-1.5 py-0.5 bg-blue-900/60 text-blue-300 rounded font-bold text-[10px]">
+                              {priceAnalysisResult.marketInfo.demandLevel} Demand
+                            </span>
+                          </div>
+                          <div className="text-[10px] text-slate-400 pt-1 font-medium border-t border-slate-800/60">
+                            Activity Breakdown (SQLite):
+                          </div>
+                          <div className="grid grid-cols-2 gap-1 text-[10px] text-slate-300 bg-slate-950/40 p-1.5 rounded border border-slate-800/50">
+                            <div>Searches: {priceAnalysisResult.marketInfo.activityBreakdown.searchCount}</div>
+                            <div>Views: {priceAnalysisResult.marketInfo.activityBreakdown.viewCount}</div>
+                            <div>Wishlists: {priceAnalysisResult.marketInfo.activityBreakdown.wishlistCount}</div>
+                            <div>Requests: {priceAnalysisResult.marketInfo.activityBreakdown.requestCount}</div>
+                          </div>
+                          {priceAnalysisResult.marketInfo.isSparseData && (
+                            <div className="text-[10px] text-amber-400 font-bold bg-amber-950/40 px-2 py-1 rounded border border-amber-800/40 mt-1">
+                              ⚠️ Limited marketplace data
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* 3. Fair Price Suggestion */}
+                      <div className="bg-slate-900/70 border border-blue-800/40 rounded-xl p-3.5 space-y-2">
+                        <div className="flex items-center space-x-1.5 text-blue-400 font-bold border-b border-slate-800 pb-1.5">
+                          <TrendingUp className="w-4 h-4" />
+                          <span>Fair Price Suggestion</span>
+                        </div>
+                        <div className="space-y-1.5 text-[11px] text-slate-300">
+                          <div>
+                            <span className="text-slate-400 font-medium">Rec. Selling Price:</span>{' '}
+                            <span className="text-base font-extrabold text-emerald-400">₹{priceAnalysisResult.suggestedPrice}</span>
+                          </div>
+                          <div>
+                            <span className="text-slate-400 font-medium">Rec. 5-Day Rental:</span>{' '}
+                            <span className="font-bold text-sky-300">₹{priceAnalysisResult.suggestedRentalPrice5Days}</span>
+                          </div>
+                          <div>
+                            <span className="text-slate-400 font-medium">Suggested Range:</span>{' '}
+                            <span className="font-semibold text-slate-200">
+                              ₹{priceAnalysisResult.minPrice} – ₹{priceAnalysisResult.maxPrice}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-slate-400 font-medium">Confidence:</span>{' '}
+                            {priceAnalysisResult.isSparseData ? (
+                              <span className="text-amber-400 font-semibold">{priceAnalysisResult.confidenceText}</span>
+                            ) : (
+                              <span className="text-emerald-400 font-bold">{priceAnalysisResult.confidenceText}</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Explanation Banner */}
+                    <div className="bg-blue-950/50 border border-blue-800/40 rounded-xl p-3 text-[11px] text-blue-200 flex items-start space-x-2">
+                      <Info className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
+                      <div className="space-y-0.5">
+                        <span className="font-bold text-white">AI Valuation Rationale: </span>
+                        <span>{priceAnalysisResult.explanation}</span>
+                      </div>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-blue-900/40">
+                      <button
+                        type="button"
+                        onClick={() => setExpectedPrice(priceAnalysisResult.suggestedPrice.toString())}
+                        className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-bold text-xs rounded-xl transition-all flex items-center space-x-1.5 cursor-pointer shadow-sm"
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                        <span>Use Selling Price (₹{priceAnalysisResult.suggestedPrice})</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setExpectedPrice(priceAnalysisResult.suggestedRentalPrice5Days.toString())}
+                        className="px-3.5 py-2 bg-sky-600 hover:bg-sky-500 active:bg-sky-700 text-white font-bold text-xs rounded-xl transition-all flex items-center space-x-1.5 cursor-pointer shadow-sm"
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                        <span>Use Rental Price (₹{priceAnalysisResult.suggestedRentalPrice5Days})</span>
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-blue-950/30 border border-blue-900/30 rounded-xl p-4 text-center text-xs text-blue-200/70">
+                    Click <strong className="text-blue-300">"Analyze Book"</strong> above to calculate recommended selling price, 5-day rental price, book age, and live marketplace demand.
+                  </div>
+                )}
               </div>
             </div>
 
@@ -482,7 +733,7 @@ export default function AddBookClient() {
         </div>
 
         {/* AI Valuation Assistant Chat Column */}
-        <div className="lg:col-span-5 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-between h-[640px]">
+        <div className="lg:col-span-5 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-between h-[680px]">
           <div className="space-y-3">
             <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
               <div className="p-2 bg-blue-50 text-blue-600 rounded-xl">
@@ -495,12 +746,9 @@ export default function AddBookClient() {
             </div>
 
             {/* Chat Messages */}
-            <div className="space-y-3 h-[450px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-slate-200">
+            <div className="space-y-3 h-[490px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-slate-200">
               {chatMessages.map((msg, i) => (
-                <div
-                  key={i}
-                  className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-                >
+                <div key={i} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
                   <div
                     className={`max-w-[85%] rounded-2xl p-3.5 text-xs space-y-2 ${
                       msg.sender === 'user'
@@ -543,7 +791,9 @@ export default function AddBookClient() {
               <div className="flex items-center space-x-2 bg-blue-50 p-2 rounded-lg text-xs text-blue-700 font-semibold">
                 <img src={imagePreview} alt="Attachment" className="w-8 h-8 object-cover rounded" />
                 <span className="truncate flex-1">Image attached</span>
-                <button type="button" onClick={() => setImagePreview(null)} className="text-rose-500 font-bold">✕</button>
+                <button type="button" onClick={() => setImagePreview(null)} className="text-rose-500 font-bold">
+                  ✕
+                </button>
               </div>
             )}
             <div className="flex items-center space-x-2">

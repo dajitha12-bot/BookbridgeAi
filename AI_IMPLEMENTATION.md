@@ -2,96 +2,97 @@
 
 ## Overview
 
-**BookBridge AI** features a single, unified AI pipeline entitled **"Smart Book Market & Fair Price Intelligence"** (`src/lib/ai/`). 
+**BookBridge AI** features a single, deterministic, explainable AI pricing model entitled **"Smart Book Market & Fair Price Intelligence"** (`src/lib/ai/`). 
 
-Rather than fragmenting into multiple disconnected AI tools, this system unifies **Image Condition Analysis**, **Metadata Identification**, **Dynamic Demand Scoring**, and **Explainable Price Regression** into an integrated end-to-end intelligence engine.
+Rather than relying on third-party generative LLMs (Gemini, OpenAI, Claude), this system implements **our own locally executed algorithms** combining **Visual Condition Analysis**, **ISBN Identification**, **Dynamic SQLite Demand Scoring**, and **Explainable Regression** into an integrated end-to-end intelligence engine.
 
 ---
 
-## 1. Unified Architecture Diagram
+## 1. Smart Book Fair Price Assistant (Add Book Integration)
 
+The **Smart Book Fair Price Assistant** is integrated directly into the Add Book page (`src/app/dashboard/add-book/AddBookClient.tsx`), placed near the pricing fields (`Original Price`, `Purchase Date`, `Condition`, `Expected Selling Price`).
+
+### Card Structure & 3 Analysis Sections
+
+When a seller inputs details and clicks **`[ Analyze Book ]`**, the system executes `analyzeFairPriceAction` which computes real-time metrics and displays a card with three distinct sections:
+
+1. **Book Analysis Section**:
+   - **Title**: User-provided or ISBN-populated title.
+   - **ISBN**: Extracted or manually entered ISBN code.
+   - **Original Price (MRP)**: Base publication MRP in ₹.
+   - **Purchase Date**: ISO date of original purchase.
+   - **Calculated Book Age**: Dynamically calculated using current `new Date()` vs purchase date. Formatted explicitly with years/months AND total days (e.g. `1 year 8 months (608 days)`).
+   - **Condition**: Selected or visual condition rating.
+   - **Edition**: Book edition number.
+
+2. **Market Information Section**:
+   - **Reference Price**: Category benchmark price or historical transaction average from SQLite `price_history` / `market_data`.
+   - **Demand Score**: Dynamic 0–100 score computed from live SQLite activity logs.
+   - **Demand Level**: Categorized into `Low` (0–30), `Medium` (31–60), `High` (61–80), or `Very High` (81–100).
+   - **Activity Breakdown**: Real counts from SQLite `search_activity`, `book_views`, `wishlist`, `book_requests`, `orders`, `rentals`, and `exchanges`.
+   - **Sparse Data Indicator**: If transaction/activity data is low (< 2 events), displays: `⚠️ Limited marketplace data`.
+
+3. **Fair Price Suggestion Section**:
+   - **Recommended Selling Price (₹)**: Computed optimal resale price.
+   - **Recommended 5-Day Rental Price (₹)**: Computed 5-day rental price (~15% of selling price or ₹35 min).
+   - **Suggested Selling Range**: Recommended bounds (₹ min – ₹ max).
+   - **Confidence Score**: Quantitative percentage (e.g., `85%`). Displays `Low confidence — limited historical marketplace data` if data is sparse.
+   - **Valuation Rationale**: Natural language breakdown explaining how MRP, age depreciation, condition multiplier, and demand score influenced the price.
+
+### Action Buttons
+- **`[ Use Selling Price (₹X) ]`**: Instantly populates the `expectedPrice` form field with the recommended selling price.
+- **`[ Use Rental Price (₹Y) ]`**: Instantly populates the `expectedPrice` form field with the recommended 5-day rental price.
+
+### SQLite Database Persistence
+Every analysis run via `analyzeFairPriceAction` inserts a record into the SQLite `ai_predictions` table:
+```sql
+INSERT INTO ai_predictions (id, book_id, user_id, title, visual_condition_score, predicted_fair_price, min_suggested_price, max_suggested_price, demand_score, confidence, features_json)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 ```
-                 [ Upload Book Cover Image ] + [ Enter Book Details ]
-                                    ↓
-┌───────────────────────────────────────────────────────────────────────┐
-│                      UNIFIED AI PIPELINE                              │
-│                                                                       │
-│  1. Visual Condition Analysis (src/lib/ai/imageAnalysis.ts)            │
-│     → Evaluates image clarity, brightness, contrast & cover wear      │
-│     → Outputs: Visual Condition Score (0–100) & Detected Condition    │
-│                                                                       │
-│  2. ISBN Metadata Identification (src/lib/ai/bookIdentification.ts)   │
-│     → Open Library REST API query with SQLite DB cache fallback       │
-│                                                                       │
-│  3. Dynamic Demand Scoring Engine (src/lib/ai/demandScore.ts)          │
-│     → Processes real SQLite activity metrics                          │
-│     → Requests (35%) + Wishlist (20%) + Searches (15%) + Views (10%)  │
-│       + Recent Sales (10%) + Rental/Exchange Activity (10%)           │
-│     → Outputs: Demand Score (0–100) & Demand Level                   │
-│                                                                       │
-│  4. Explainable Fair Price Model (src/lib/ai/pricePrediction.ts)       │
-│     → Blends MRP, Book Age, Condition, Demand, Edition & SQLite Hist  │
-│     → Outputs: AI Fair Price (₹), Min/Max Range, Confidence (%)       │
-└───────────────────────────────────────────────────────────────────────┘
-                                    ↓
-         [ Market Intelligence Dashboard & Add Book AI Suggestions ]
-```
 
 ---
 
-## 2. Component Specifications
+## 2. Dynamic Demand Scoring Algorithm (`src/lib/ai/demandScore.ts`)
 
-### A. AI-Assisted Visual Condition Analysis (`src/lib/ai/imageAnalysis.ts`)
-- **Methodology**: Evaluates visual properties of the uploaded cover photo (resolution, brightness, contrast, edge complexity).
-- **Output**:
-  - `conditionScore`: Numeric rating (0–100).
-  - `detectedCondition`: Classification (`LIKE_NEW`, `VERY_GOOD`, `GOOD`, `FAIR`).
-  - `qualityMetrics`: Visual parameters (clarity, brightness, contrast, wear level summary).
-- **Disclaimer**: Termed *AI-Assisted Visual Condition Analysis* because physical page quality remains verifiable by seller input.
+The demand score (0–100) is calculated strictly from empirical records stored in `data/bookbridge.db`:
 
----
+$$\text{Demand Score} = \min(35, N_{\text{requests}} \times 12) + \min(20, N_{\text{wishlist}} \times 7) + \min(15, N_{\text{searches}} \times 4) + \min(10, N_{\text{views}} \times 3) + \min(10, N_{\text{sales}} \times 5) + \min(10, N_{\text{rentals/exchanges}} \times 5)$$
 
-### B. Dynamic Demand Scoring Algorithm (`src/lib/ai/demandScore.ts`)
-- **Weight Allocation Formula**:
-  - **User Requests**: 35%
-  - **Wishlist Saves**: 20%
-  - **Search Activity**: 15%
-  - **Book Detail Views**: 10%
-  - **Recent Completed Sales**: 10%
-  - **Rental & Exchange Requests**: 10%
-- **Normalized Demand Levels**:
-  - `0 – 30`: **Low**
-  - `31 – 60`: **Medium**
-  - `61 – 80`: **High**
-  - `81 – 100`: **Very High**
+### Weighted Factors:
+- **User Requests**: 35%
+- **Wishlist Saves**: 20%
+- **Search Activity**: 15%
+- **Book Views**: 10%
+- **Recent Completed Sales**: 10%
+- **Rental & Exchange Requests**: 10%
 
 ---
 
-### C. Explainable Fair Price Predictor (`src/lib/ai/pricePrediction.ts`)
-- **Formula & Inputs**:
-  $$\text{Base Depreciated Price} = \text{MRP} \times (1 - \text{Age Depreciation Rate})$$
-  $$\text{Raw Fair Price} = \text{Base Price} \times \text{Condition Multiplier} \times \text{Demand Multiplier} + \text{Edition Bonus}$$
-  $$\text{Final Fair Price} = 60\% \times \text{Raw Fair Price} + 40\% \times \text{SQLite Historical Average}$$
-- **Outputs**:
-  - **AI Fair Price** (e.g. ₹850)
-  - **Suggested Price Range** (e.g. ₹765 – ₹935)
-  - **Confidence Rating** (e.g. 88%)
-  - **Factor Breakdown** (MRP, Age depreciation %, Condition multiplier, Demand score, Historical benchmark)
+## 3. Explainable Fair Price Predictor Formula (`src/lib/ai/pricePrediction.ts`)
+
+$$\text{Base Depreciated Price} = \text{MRP} \times (1 - \min(0.60, \text{AgeInYears} \times 0.15))$$
+
+$$\text{Condition Multiplier} = \begin{cases} 
+0.92 & \text{LIKE\_NEW} \\
+0.85 & \text{VERY\_GOOD} \\
+0.75 & \text{GOOD} \\
+0.60 & \text{FAIR}
+\end{cases}$$
+
+$$\text{Demand Multiplier} = 0.85 + \left(\frac{\text{DemandScore}}{100} \times 0.30\right)$$
+
+$$\text{Raw Calculated Price} = (\text{Base Depreciated Price} \times \text{Condition Multiplier} \times \text{Demand Multiplier}) + \text{Edition Bonus}$$
+
+$$\text{Final Fair Price} = \begin{cases} 
+60\% \times \text{Raw Calculated Price} + 40\% \times \text{Historical Avg Price} & \text{if history exists} \\
+\text{Raw Calculated Price} & \text{otherwise}
+\end{cases}$$
 
 ---
 
-## 3. Book Market Intelligence Dashboard (`/dashboard/market-intelligence`)
+## 4. Viva Defense Guide (Why Local Algorithms Over External LLMs?)
 
-The Market Intelligence page displays real-time analytics queried directly from `data/bookbridge.db`:
-- **Demand Gauges**: Category-wide demand scores (0–100).
-- **Market Price Ranges**: Lowest, average, and highest transaction prices per category.
-- **Price Trends**: Category trajectories (`INCREASING`, `STABLE`, `DECREASING`).
-- **Activity Summary**: Live counts of requests, wishlists, searches, views, and sales.
-- **Historical Chart**: Monthly benchmark trends indexed from SQLite transaction logs.
-
----
-
-## 4. Local Execution & Privacy
-
-- **No Remote AI Lock-in**: All condition analysis, demand scoring, and fair price prediction algorithms execute locally within Node.js / TypeScript.
-- **Explainability**: Every prediction displays a complete breakdown of the underlying factors so sellers understand why a price was recommended.
+1. **Determinism & Reproducibility**: LLMs return non-deterministic text responses. Our local mathematical regression guarantees that identical book attributes yield consistent, explainable price outputs.
+2. **Data Grounding**: Prices are anchored strictly in real transaction records, MRPs, and active SQLite marketplace demand, preventing hallucinations.
+3. **Zero External API Costs & Latency**: Runs entirely in-process within Node.js in milliseconds without needing API keys or cloud dependencies.
+4. **Privacy & Offline Support**: Sensitive user listings and transactional activity remain safely inside the local SQLite database (`bookbridge.db`).
