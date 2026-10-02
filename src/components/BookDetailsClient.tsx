@@ -15,10 +15,13 @@ import {
   Star,
   PlusCircle,
   MessageSquare,
-  Phone
+  Phone,
+  Mail,
+  ExternalLink,
+  CheckCircle
 } from 'lucide-react';
 import { useWishlist } from '../hooks/useWishlist';
-import { createOrderAction } from '../actions/orderActions';
+import { createOrderAction, initiateOrderPaymentAction } from '../actions/orderActions';
 import { requestExchangeAction } from '../actions/exchangeActions';
 
 interface BookDetailsClientProps {
@@ -41,8 +44,15 @@ export default function BookDetailsClient({
   const [showCheckout, setShowCheckout] = useState(false);
   const [deliveryMethod, setDeliveryMethod] = useState<'DELIVERY' | 'PICKUP'>('DELIVERY');
   const [paymentMethod, setPaymentMethod] = useState<'ONLINE' | 'COD'>('ONLINE');
+  const [buyerEmail, setBuyerEmail] = useState('');
   const [address, setAddress] = useState(book.owner.profile?.address || '');
   const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
+  const [initiatedOrder, setInitiatedOrder] = useState<{
+    orderId: string;
+    paymentUrl: string;
+    totalAmount: number;
+    email: string;
+  } | null>(null);
 
   // Exchange flow state
   const [showExchangeModal, setShowExchangeModal] = useState(false);
@@ -74,16 +84,26 @@ export default function BookDetailsClient({
 
     setIsSubmittingOrder(true);
     try {
-      const res = await createOrderAction(
+      const res = await initiateOrderPaymentAction(
         book.id,
         deliveryMethod,
         paymentMethod,
-        paymentMethod === 'ONLINE' ? { transactionId: `TXN_DEMO_${Date.now()}` } : undefined
+        buyerEmail
       );
 
       if (res.success) {
-        alert('Order placed successfully! Redirecting to orders dashboard.');
-        router.push('/dashboard/orders');
+        if (res.isOnlinePayment && res.paymentUrl) {
+          setInitiatedOrder({
+            orderId: res.orderId!,
+            paymentUrl: res.paymentUrl,
+            totalAmount: res.totalAmount!,
+            email: buyerEmail || 'your email',
+          });
+        } else {
+          alert('Order placed successfully! Redirecting to orders dashboard.');
+          router.push('/dashboard/orders');
+          setShowCheckout(false);
+        }
       } else {
         alert(res.error || 'Failed to place order.');
       }
@@ -91,7 +111,6 @@ export default function BookDetailsClient({
       alert('An error occurred during checkout.');
     } finally {
       setIsSubmittingOrder(false);
-      setShowCheckout(false);
     }
   };
 
@@ -317,170 +336,243 @@ export default function BookDetailsClient({
          ========================================== */}
       {showCheckout && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
-          <form 
-            onSubmit={handlePlaceOrder} 
-            className="bg-white rounded-xl max-w-md w-full p-6 space-y-5 shadow-xl border border-slate-100"
-          >
+          <div className="bg-white rounded-xl max-w-md w-full p-6 space-y-5 shadow-xl border border-slate-100">
             <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-              <h3 className="font-bold text-slate-800 text-base">Checkout: {book.title}</h3>
+              <h3 className="font-bold text-slate-800 text-base">
+                {initiatedOrder ? 'Payment Request Email Sent' : `Checkout: ${book.title}`}
+              </h3>
               <button 
                 type="button" 
-                onClick={() => setShowCheckout(false)}
+                onClick={() => {
+                  setShowCheckout(false);
+                  setInitiatedOrder(null);
+                }}
                 className="text-slate-400 hover:text-slate-600 font-bold"
               >
                 ✕
               </button>
             </div>
 
-            {/* Delivery Method Toggle */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">Select Delivery Option</label>
-              <div className="grid grid-cols-2 gap-3">
-                <label className={`flex flex-col items-center justify-center p-3 rounded-lg border cursor-pointer text-center space-y-1 ${
-                  deliveryMethod === 'DELIVERY' 
-                    ? 'border-sky-500 bg-sky-50/50 text-sky-600' 
-                    : 'border-slate-200 text-slate-600'
-                }`}>
-                  <input
-                    type="radio"
-                    name="deliveryMethod"
-                    checked={deliveryMethod === 'DELIVERY'}
-                    onChange={() => setDeliveryMethod('DELIVERY')}
-                    className="sr-only"
-                  />
-                  <Truck className="w-5 h-5" />
-                  <span className="text-xs font-bold">Home Delivery</span>
-                </label>
-                
-                <label className={`flex flex-col items-center justify-center p-3 rounded-lg border cursor-pointer text-center space-y-1 ${
-                  deliveryMethod === 'PICKUP' 
-                    ? 'border-sky-500 bg-sky-50/50 text-sky-600' 
-                    : 'border-slate-200 text-slate-600'
-                }`}>
-                  <input
-                    type="radio"
-                    name="deliveryMethod"
-                    checked={deliveryMethod === 'PICKUP'}
-                    onChange={() => setDeliveryMethod('PICKUP')}
-                    className="sr-only"
-                  />
-                  <MapPin className="w-5 h-5" />
-                  <span className="text-xs font-bold">Offline Pickup</span>
-                </label>
-              </div>
-            </div>
+            {initiatedOrder ? (
+              <div className="space-y-4 text-xs animate-fade-in">
+                <div className="bg-sky-50 border border-sky-200 p-4 rounded-xl text-center space-y-2">
+                  <div className="w-12 h-12 bg-sky-500 text-white rounded-full flex items-center justify-center mx-auto shadow-md">
+                    <Mail className="w-6 h-6" />
+                  </div>
+                  <h4 className="font-extrabold text-slate-900 text-sm">Payment Link Dispatched!</h4>
+                  <p className="text-slate-600 text-xs">
+                    Payment request email with prominent <strong className="text-sky-600">[ PAY ₹{initiatedOrder.totalAmount} ]</strong> button has been sent to:
+                  </p>
+                  <code className="bg-white px-2.5 py-1 rounded border border-sky-200 font-mono text-sky-700 font-bold text-xs block truncate">
+                    {initiatedOrder.email}
+                  </code>
+                </div>
 
-            {/* Handover Details based on selection */}
-            {deliveryMethod === 'DELIVERY' ? (
-              <div className="space-y-1.5 text-xs">
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">Confirm Destination Address</label>
-                <textarea
-                  required
-                  rows={2}
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  placeholder="Verify your complete street address details..."
-                  className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500 text-slate-800 bg-white"
-                />
+                <div className="bg-slate-50 border border-slate-200 p-3 rounded-lg space-y-1 text-slate-700">
+                  <div className="flex justify-between font-medium">
+                    <span>Order ID:</span>
+                    <span className="font-bold font-mono">{initiatedOrder.orderId}</span>
+                  </div>
+                  <div className="flex justify-between font-medium">
+                    <span>Total Amount:</span>
+                    <span className="font-extrabold text-emerald-600">₹{initiatedOrder.totalAmount}</span>
+                  </div>
+                </div>
+
+                <div className="space-y-2 pt-2">
+                  <a
+                    href={initiatedOrder.paymentUrl}
+                    className="w-full py-3 bg-sky-500 hover:bg-sky-600 text-white font-extrabold rounded-xl text-xs transition-colors flex items-center justify-center space-x-2 shadow-md cursor-pointer"
+                  >
+                    <span>PAY ₹{initiatedOrder.totalAmount} (Open Payment Portal)</span>
+                    <ExternalLink className="w-4 h-4" />
+                  </a>
+
+                  <button
+                    onClick={() => {
+                      setShowCheckout(false);
+                      setInitiatedOrder(null);
+                      router.push('/dashboard/orders');
+                    }}
+                    className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-colors"
+                  >
+                    View Orders Dashboard
+                  </button>
+                </div>
               </div>
             ) : (
-              <div className="bg-amber-50/50 border border-amber-100 p-3 rounded-lg text-xs space-y-1">
-                <span className="font-bold text-amber-800">Pickup Details</span>
-                <p className="text-slate-600 leading-relaxed">
-                  Seller pickup coordinates: {book.area}, {book.city}. Meet offline to receive book and finalize payment.
-                </p>
-              </div>
-            )}
-
-            {/* Payment Method Toggle */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">Select Payment Mode</label>
-              <div className="grid grid-cols-2 gap-3">
-                <label className={`flex items-center justify-center p-2.5 rounded-lg border cursor-pointer text-xs font-bold ${
-                  paymentMethod === 'ONLINE' ? 'border-sky-500 bg-sky-50/50 text-sky-600' : 'border-slate-200 text-slate-600'
-                }`}>
+              <form onSubmit={handlePlaceOrder} className="space-y-5">
+                {/* Buyer Email Input */}
+                <div className="space-y-1.5 text-xs">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block flex items-center gap-1.5">
+                    <Mail className="w-3.5 h-3.5 text-sky-500" />
+                    Buyer Email Address (for Payment Request)
+                  </label>
                   <input
-                    type="radio"
-                    name="paymentMethod"
-                    checked={paymentMethod === 'ONLINE'}
-                    onChange={() => setPaymentMethod('ONLINE')}
-                    className="sr-only"
+                    type="email"
+                    required
+                    value={buyerEmail}
+                    onChange={(e) => setBuyerEmail(e.target.value)}
+                    placeholder="Enter your real email address (e.g. buyer@gmail.com)"
+                    className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500 text-slate-800 bg-white font-medium"
                   />
-                  <span>Online UPI (Demo)</span>
-                </label>
-                <label className={`flex items-center justify-center p-2.5 rounded-lg border cursor-pointer text-xs font-bold ${
-                  paymentMethod === 'COD' ? 'border-sky-500 bg-sky-50/50 text-sky-600' : 'border-slate-200 text-slate-600'
-                }`}>
-                  <input
-                    type="radio"
-                    name="paymentMethod"
-                    checked={paymentMethod === 'COD'}
-                    onChange={() => setPaymentMethod('COD')}
-                    className="sr-only"
-                  />
-                  <span>Cash On Delivery</span>
-                </label>
-              </div>
-            </div>
+                  <p className="text-[10px] text-slate-400">
+                    Payment link email with [ PAY ₹{book.expectedPrice + (deliveryMethod === 'DELIVERY' ? 40 : 0)} ] will be sent here.
+                  </p>
+                </div>
 
-            {/* Seller UPI Breakdown & Demo Payment Card */}
-            {paymentMethod === 'ONLINE' && (
-              <div className="bg-slate-900 text-white p-4 rounded-xl space-y-3 shadow-sm border border-slate-800">
-                <div className="flex justify-between items-center border-b border-slate-800 pb-2">
-                  <span className="text-xs font-bold text-slate-300">Pay Seller via UPI</span>
-                  <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full font-bold">
-                    Automated Retrieval
-                  </span>
+                {/* Delivery Method Toggle */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">Select Delivery Option</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <label className={`flex flex-col items-center justify-center p-3 rounded-lg border cursor-pointer text-center space-y-1 ${
+                      deliveryMethod === 'DELIVERY' 
+                        ? 'border-sky-500 bg-sky-50/50 text-sky-600' 
+                        : 'border-slate-200 text-slate-600'
+                    }`}>
+                      <input
+                        type="radio"
+                        name="deliveryMethod"
+                        checked={deliveryMethod === 'DELIVERY'}
+                        onChange={() => setDeliveryMethod('DELIVERY')}
+                        className="sr-only"
+                      />
+                      <Truck className="w-5 h-5" />
+                      <span className="text-xs font-bold">Home Delivery (+₹40)</span>
+                    </label>
+                    
+                    <label className={`flex flex-col items-center justify-center p-3 rounded-lg border cursor-pointer text-center space-y-1 ${
+                      deliveryMethod === 'PICKUP' 
+                        ? 'border-sky-500 bg-sky-50/50 text-sky-600' 
+                        : 'border-slate-200 text-slate-600'
+                    }`}>
+                      <input
+                        type="radio"
+                        name="deliveryMethod"
+                        checked={deliveryMethod === 'PICKUP'}
+                        onChange={() => setDeliveryMethod('PICKUP')}
+                        className="sr-only"
+                      />
+                      <MapPin className="w-5 h-5" />
+                      <span className="text-xs font-bold">Offline Pickup (₹0)</span>
+                    </label>
+                  </div>
                 </div>
-                <div className="text-xs space-y-1.5">
-                  <div className="flex justify-between">
-                    <span className="text-slate-400">Seller Name:</span>
-                    <span className="font-bold text-white">{book.owner.name}</span>
+
+                {/* Handover Details based on selection */}
+                {deliveryMethod === 'DELIVERY' ? (
+                  <div className="space-y-1.5 text-xs">
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">Confirm Destination Address</label>
+                    <textarea
+                      required
+                      rows={2}
+                      value={address}
+                      onChange={(e) => setAddress(e.target.value)}
+                      placeholder="Verify your complete street address details..."
+                      className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500 text-slate-800 bg-white"
+                    />
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-400">Seller UPI ID:</span>
-                    <code className="font-mono text-emerald-400 bg-slate-800 px-1.5 py-0.5 rounded text-[11px]">
-                      {book.owner.name.toLowerCase().replace(/[^a-z0-9]/g, '') || 'seller'}@upi
-                    </code>
+                ) : (
+                  <div className="bg-amber-50/50 border border-amber-100 p-3 rounded-lg text-xs space-y-1">
+                    <span className="font-bold text-amber-800">Pickup Details</span>
+                    <p className="text-slate-600 leading-relaxed">
+                      Seller pickup coordinates: {book.area}, {book.city}. Meet offline to receive book and finalize payment.
+                    </p>
                   </div>
-                  <div className="flex justify-between border-t border-slate-800 pt-2 text-slate-300">
-                    <span>Book Amount:</span>
-                    <span>₹{book.expectedPrice}</span>
-                  </div>
-                  <div className="flex justify-between text-slate-300">
-                    <span>Delivery Charge:</span>
-                    <span>{deliveryMethod === 'DELIVERY' ? '₹40' : '₹0'}</span>
-                  </div>
-                  <div className="flex justify-between border-t border-slate-800 pt-2 font-extrabold text-white text-sm">
-                    <span className="text-emerald-400">Total Amount:</span>
-                    <span className="text-emerald-400">₹{book.expectedPrice + (deliveryMethod === 'DELIVERY' ? 40 : 0)}</span>
+                )}
+
+                {/* Payment Method Toggle */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">Select Payment Mode</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <label className={`flex items-center justify-center p-2.5 rounded-lg border cursor-pointer text-xs font-bold ${
+                      paymentMethod === 'ONLINE' ? 'border-sky-500 bg-sky-50/50 text-sky-600' : 'border-slate-200 text-slate-600'
+                    }`}>
+                      <input
+                        type="radio"
+                        name="paymentMethod"
+                        checked={paymentMethod === 'ONLINE'}
+                        onChange={() => setPaymentMethod('ONLINE')}
+                        className="sr-only"
+                      />
+                      <span>Online UPI (Demo)</span>
+                    </label>
+                    <label className={`flex items-center justify-center p-2.5 rounded-lg border cursor-pointer text-xs font-bold ${
+                      paymentMethod === 'COD' ? 'border-sky-500 bg-sky-50/50 text-sky-600' : 'border-slate-200 text-slate-600'
+                    }`}>
+                      <input
+                        type="radio"
+                        name="paymentMethod"
+                        checked={paymentMethod === 'COD'}
+                        onChange={() => setPaymentMethod('COD')}
+                        className="sr-only"
+                      />
+                      <span>Cash On Delivery</span>
+                    </label>
                   </div>
                 </div>
-                <div className="text-[10px] text-slate-400 bg-slate-800/80 p-2 rounded-lg leading-relaxed">
-                  <span className="font-bold text-amber-400 block">Notice: Demo UPI Payment</span>
-                  This simulated checkout verifies transaction creation, receipt generation, and real-time database state without actual bank debit.
+
+                {/* Seller UPI Breakdown & Demo Payment Card */}
+                {paymentMethod === 'ONLINE' && (
+                  <div className="bg-slate-900 text-white p-4 rounded-xl space-y-3 shadow-sm border border-slate-800">
+                    <div className="flex justify-between items-center border-b border-slate-800 pb-2">
+                      <span className="text-xs font-bold text-slate-300">Pay Seller via UPI</span>
+                      <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full font-bold">
+                        Automated Retrieval
+                      </span>
+                    </div>
+                    <div className="text-xs space-y-1.5">
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">Seller Name:</span>
+                        <span className="font-bold text-white">{book.owner.name}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">Seller UPI ID:</span>
+                        <code className="font-mono text-emerald-400 bg-slate-800 px-1.5 py-0.5 rounded text-[11px]">
+                          {book.owner.name.toLowerCase().replace(/[^a-z0-9]/g, '') || 'seller'}@upi
+                        </code>
+                      </div>
+                      <div className="flex justify-between border-t border-slate-800 pt-2 text-slate-300">
+                        <span>Book Amount:</span>
+                        <span>₹{book.expectedPrice}</span>
+                      </div>
+                      <div className="flex justify-between text-slate-300">
+                        <span>Delivery Charge:</span>
+                        <span>{deliveryMethod === 'DELIVERY' ? '₹40' : '₹0'}</span>
+                      </div>
+                      <div className="flex justify-between border-t border-slate-800 pt-2 font-extrabold text-white text-sm">
+                        <span className="text-emerald-400">Total Amount:</span>
+                        <span className="text-emerald-400">₹{book.expectedPrice + (deliveryMethod === 'DELIVERY' ? 40 : 0)}</span>
+                      </div>
+                    </div>
+                    <div className="text-[10px] text-slate-400 bg-slate-800/80 p-2 rounded-lg leading-relaxed">
+                      <span className="font-bold text-amber-400 block">Notice: Demo UPI Payment</span>
+                      Clicking proceed will send a payment link to your email containing the [ PAY ₹{book.expectedPrice + (deliveryMethod === 'DELIVERY' ? 40 : 0)} ] button.
+                    </div>
+                  </div>
+                )}
+
+                <div className="border-t border-slate-100 pt-3.5 flex justify-between items-center text-xs font-bold text-slate-800">
+                  <div>
+                    <span className="block text-[11px] text-slate-400 font-normal">Order Total</span>
+                    <span className="text-base text-slate-900">
+                      ₹{book.expectedPrice + (deliveryMethod === 'DELIVERY' ? 40 : 0)}
+                    </span>
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={isSubmittingOrder}
+                    className="px-6 py-2.5 bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 text-white rounded-xl text-xs font-bold transition-colors shadow-sm cursor-pointer"
+                  >
+                    {isSubmittingOrder ? 'Generating Payment Email...' : paymentMethod === 'ONLINE' ? `Send Payment Email (₹${book.expectedPrice + (deliveryMethod === 'DELIVERY' ? 40 : 0)})` : 'Place COD Order'}
+                  </button>
                 </div>
-              </div>
+              </form>
             )}
-
-            <div className="border-t border-slate-100 pt-3.5 flex justify-between items-center text-xs font-bold text-slate-800">
-              <div>
-                <span className="block text-[11px] text-slate-400 font-normal">Order Total</span>
-                <span className="text-base text-slate-900">
-                  ₹{book.expectedPrice + (deliveryMethod === 'DELIVERY' ? 40 : 0)}
-                </span>
-              </div>
-              <button
-                type="submit"
-                disabled={isSubmittingOrder}
-                className="px-6 py-2.5 bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 text-white rounded-xl text-xs font-bold transition-colors shadow-sm cursor-pointer"
-              >
-                {isSubmittingOrder ? 'Processing Demo Payment...' : paymentMethod === 'ONLINE' ? `Pay ₹${book.expectedPrice + (deliveryMethod === 'DELIVERY' ? 40 : 0)} to Seller` : 'Place COD Order'}
-              </button>
-            </div>
-          </form>
+          </div>
         </div>
       )}
+
 
       {/* ==========================================
           EXCHANGE PROPOSAL MODAL

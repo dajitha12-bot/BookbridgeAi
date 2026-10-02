@@ -9,17 +9,17 @@ import { createNotification } from '../lib/db/notifications';
 import { getSession } from '../lib/auth/session';
 import { recommendDeliveryStaff } from '../lib/utils/deliveryStaffRules';
 import { getSellerUpiByUserId } from '../lib/db/sellerUpi';
-import { sendOrderConfirmationEmail, sendSellerOrderEmail } from '../lib/utils/emailNotifier';
+import { sendOrderConfirmationEmail, sendSellerOrderEmail, sendPaymentEmailToBuyer } from '../lib/utils/emailNotifier';
 import { revalidatePath } from 'next/cache';
 
 /**
- * Create Order Action (Checkout workflow)
+ * Initiate Order Payment Action (Checkout workflow - Step 1: Create pending order & send payment email)
  */
-export async function createOrderAction(
+export async function initiateOrderPaymentAction(
   bookId: string,
   deliveryMethod: 'DELIVERY' | 'PICKUP',
   paymentMethod: 'ONLINE' | 'COD',
-  demoPaymentDetails?: { cardNumber?: string; transactionId?: string }
+  buyerEmailInput?: string
 ) {
   try {
     const session = await getSession();
@@ -52,16 +52,14 @@ export async function createOrderAction(
       return { success: false, error: 'Seller account not found.' };
     }
 
-    // Determine payment status
-    let paymentStatus = 'PENDING';
-    if (paymentMethod === 'COD') {
-      paymentStatus = 'COD';
-    } else if (paymentMethod === 'ONLINE') {
-      paymentStatus = 'PAID';
-    }
+    const buyerEmail = buyerEmailInput || session.email || 'buyer@bookbridge.com';
+    const deliveryFee = deliveryMethod === 'DELIVERY' ? 40 : 0;
+    const totalAmount = book.expectedPrice + deliveryFee;
 
-    // Determine initial order status
-    const orderStatus = deliveryMethod === 'PICKUP' ? 'READY_FOR_PICKUP' : 'PENDING';
+    // Determine payment and order status
+    const isOnline = paymentMethod === 'ONLINE';
+    const paymentStatus = isOnline ? 'PENDING' : 'COD';
+    const orderStatus = 'PENDING'; // Always starts as PENDING (Waiting for Admin Confirmation)
 
     // 1. Reserve the book
     await updateBook(bookId, { status: 'RESERVED' });
@@ -78,77 +76,294 @@ export async function createOrderAction(
       pickupLocation: deliveryMethod === 'PICKUP' ? 'Anna Nagar Bus Stand' : null,
     });
 
-    // 3. Create the payment log
-    await createPayment({
+    // 3. Create the payment log in SQLite
+    const payment = await createPayment({
       orderId: newOrder.id,
       amount: book.expectedPrice,
+      deliveryCharge: deliveryFee,
+      totalAmount: totalAmount,
       method: paymentMethod,
       status: paymentStatus as any,
-      transactionId: demoPaymentDetails?.transactionId || `TXN_DEMO_${Date.now()}`,
+      transactionId: isOnline ? `PENDING-UPI-${Date.now()}` : `COD-${Date.now()}`,
     });
 
-    // 4. Create the delivery log if home delivery is selected
+    // 4. Create delivery log if delivery selected (NO automatic delivery staff assignment)
     if (deliveryMethod === 'DELIVERY') {
       await createDelivery({
         orderId: newOrder.id,
-        staffId: '', // Unassigned initially
+        staffId: '', // Explicitly unassigned
         status: 'PENDING' as any,
       });
     }
 
-    // 5. Notifications & Email Dispatch
     const sellerUpiId = await getSellerUpiByUserId(book.ownerId);
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const paymentUrl = `${baseUrl}/payment/confirm/${newOrder.id}`;
 
-    await createNotification(
-      book.ownerId,
-      'Book Ordered!',
-      `Your book "${book.title}" has been ordered by ${session.name}. Method: ${deliveryMethod}. Seller UPI: ${sellerUpiId}.`
-    );
-
-    await createNotification(
-      session.id,
-      'Order Placed successfully!',
-      `Your order for "${book.title}" has been placed. Order ID: ${newOrder.id}. Payment: ${paymentMethod === 'ONLINE' ? 'Demo UPI Payment' : 'COD'}.`
-    );
-
-    // Send Real Email Confirmations to Buyer & Seller
-    const deliveryFee = deliveryMethod === 'DELIVERY' ? 40 : 0;
-    if (session.email) {
-      await sendOrderConfirmationEmail({
-        buyerEmail: session.email,
-        buyerName: session.name,
+    if (isOnline) {
+      // Dispatch Payment Request Email to Buyer
+      await sendPaymentEmailToBuyer({
+        buyerEmail,
+        buyerName: session.name || 'Valued Buyer',
         orderId: newOrder.id,
         bookTitle: book.title,
         sellerName: seller.name,
-        sellerUpiId,
         bookAmount: book.expectedPrice,
         deliveryCharge: deliveryFee,
-        totalAmount: book.expectedPrice + deliveryFee,
-        paymentMethod,
-        orderStatus,
-      }).catch(err => console.warn('Buyer email dispatch warning:', err));
+        totalAmount,
+        paymentUrl,
+      }).catch(err => console.warn('Payment email error:', err));
+
+      await createNotification(
+        session.id,
+        'Payment Email Sent!',
+        `Payment request sent to ${buyerEmail} for "${book.title}". Order ID: ${newOrder.id}. Amount: ₹${totalAmount}.`
+      );
+
+      revalidatePath('/dashboard/orders');
+      return {
+        success: true,
+        orderId: newOrder.id,
+        paymentId: payment.id,
+        isOnlinePayment: true,
+        paymentUrl,
+        totalAmount,
+        sellerUpiId,
+      };
+    } else {
+      // COD Flow
+      await createNotification(
+        book.ownerId,
+        'Book Ordered (COD)!',
+        `Your book "${book.title}" has been ordered by ${session.name} (COD). Order ID: ${newOrder.id}.`
+      );
+
+      await createNotification(
+        session.id,
+        'Order Placed (COD)!',
+        `Your order for "${book.title}" has been placed via Cash on Delivery. Order ID: ${newOrder.id}.`
+      );
+
+      if (buyerEmail) {
+        await sendOrderConfirmationEmail({
+          buyerEmail,
+          buyerName: session.name,
+          orderId: newOrder.id,
+          bookTitle: book.title,
+          sellerName: seller.name,
+          sellerUpiId,
+          bookAmount: book.expectedPrice,
+          deliveryCharge: deliveryFee,
+          totalAmount,
+          paymentMethod: 'COD',
+          orderStatus: 'PENDING',
+        }).catch(err => console.warn('COD Buyer email error:', err));
+      }
+
+      if (seller.email) {
+        await sendSellerOrderEmail({
+          sellerEmail: seller.email,
+          sellerName: seller.name,
+          buyerName: session.name,
+          orderId: newOrder.id,
+          bookTitle: book.title,
+          bookAmount: book.expectedPrice,
+          sellerUpiId,
+        }).catch(err => console.warn('COD Seller email error:', err));
+      }
+
+      revalidatePath('/dashboard/orders');
+      revalidatePath('/dashboard/sales');
+      return {
+        success: true,
+        orderId: newOrder.id,
+        paymentId: payment.id,
+        isOnlinePayment: false,
+        totalAmount,
+        sellerUpiId,
+      };
+    }
+  } catch (error: any) {
+    console.error('Initiate order payment error:', error);
+    return { success: false, error: error.message || 'Failed to initiate order.' };
+  }
+}
+
+/**
+ * Confirm Order Payment Action (Completes Demo UPI Payment from /payment/confirm/[orderId])
+ */
+export async function confirmOrderPaymentAction(
+  orderId: string,
+  demoUpiId?: string
+) {
+  try {
+    const session = await getSession();
+    const order = await getOrderById(orderId);
+    if (!order) return { success: false, error: 'Order not found.' };
+
+    const payment = await getPaymentByOrderId(orderId);
+    if (!payment) return { success: false, error: 'Payment record not found.' };
+
+    const book = await getBookById(order.bookId);
+    if (!book) return { success: false, error: 'Book record not found.' };
+
+    const seller = await getUserById(order.sellerId);
+    if (!seller) return { success: false, error: 'Seller not found.' };
+
+    const buyer = await getUserById(order.buyerId);
+    const buyerName = buyer?.name || session?.name || 'Valued Buyer';
+    const buyerEmail = buyer?.email || session?.email || 'buyer@bookbridge.com';
+
+    const sellerUpiId = await getSellerUpiByUserId(order.sellerId);
+
+    // Check if already paid
+    if (payment.status === 'PAID') {
+      return {
+        success: true,
+        orderId,
+        paymentId: payment.id,
+        transactionId: payment.transactionId,
+        alreadyPaid: true,
+        sellerUpiId,
+      };
+    }
+
+    // Generate Demo UPI Transaction Reference
+    const txnRef = `DEMO-UPI-${Math.floor(100000 + Math.random() * 900000)}`;
+
+    // 1. Update payment status in SQLite
+    await updatePayment(payment.id, {
+      status: 'PAID',
+      transactionId: txnRef,
+    });
+
+    // 2. Update order status in SQLite -> paymentStatus: PAID, orderStatus: PENDING (Waiting for Admin Confirmation)
+    // Note: NO automatic delivery staff assignment occurs here!
+    await updateOrder(orderId, {
+      paymentStatus: 'PAID',
+      orderStatus: 'PENDING',
+    });
+
+    const deliveryFee = order.deliveryMethod === 'DELIVERY' ? 40 : 0;
+    const totalAmount = order.amount + deliveryFee;
+
+    // 3. System Notifications
+    await createNotification(
+      order.buyerId,
+      'Payment Successful!',
+      `Demo UPI payment of ₹${totalAmount} for "${book.title}" was confirmed. Order #${orderId} is now Waiting for Admin Confirmation. Txn Ref: ${txnRef}.`
+    );
+
+    await createNotification(
+      order.sellerId,
+      'Payment Received!',
+      `Payment of ₹${order.amount} for "${book.title}" was confirmed via Demo UPI (${sellerUpiId}). Order #${orderId} is Waiting for Admin Confirmation.`
+    );
+
+    // 4. Send Confirmation Email to Buyer & Seller
+    if (buyerEmail) {
+      await sendOrderConfirmationEmail({
+        buyerEmail,
+        buyerName,
+        orderId: order.id,
+        bookTitle: book.title,
+        sellerName: seller.name,
+        sellerUpiId,
+        bookAmount: order.amount,
+        deliveryCharge: deliveryFee,
+        totalAmount,
+        paymentMethod: 'ONLINE',
+        orderStatus: 'PENDING',
+      }).catch(err => console.warn('Payment confirm buyer email error:', err));
     }
 
     if (seller.email) {
       await sendSellerOrderEmail({
         sellerEmail: seller.email,
         sellerName: seller.name,
-        buyerName: session.name,
-        orderId: newOrder.id,
+        buyerName,
+        orderId: order.id,
         bookTitle: book.title,
-        bookAmount: book.expectedPrice,
+        bookAmount: order.amount,
         sellerUpiId,
-      }).catch(err => console.warn('Seller email dispatch warning:', err));
+      }).catch(err => console.warn('Payment confirm seller email error:', err));
     }
 
     revalidatePath('/dashboard/orders');
     revalidatePath('/dashboard/sales');
-    return { success: true, orderId: newOrder.id, sellerUpiId };
+
+    return {
+      success: true,
+      orderId,
+      paymentId: payment.id,
+      transactionId: txnRef,
+      sellerUpiId,
+      totalAmount,
+    };
   } catch (error: any) {
-    console.error('Checkout error:', error);
-    return { success: false, error: error.message || 'Failed to place order.' };
+    console.error('Confirm order payment error:', error);
+    return { success: false, error: error.message || 'Failed to confirm payment.' };
   }
 }
+
+/**
+ * Get Order details for Payment Confirmation Page
+ */
+export async function getOrderForPaymentConfirmAction(orderId: string) {
+  try {
+    const order = await getOrderById(orderId);
+    if (!order) return { success: false, error: 'Order not found.' };
+
+    const book = await getBookById(order.bookId);
+    if (!book) return { success: false, error: 'Book record not found.' };
+
+    const seller = await getUserById(order.sellerId);
+    const sellerUpiId = await getSellerUpiByUserId(order.sellerId);
+    const buyer = await getUserById(order.buyerId);
+    const payment = await getPaymentByOrderId(orderId);
+
+    const deliveryCharge = order.deliveryMethod === 'DELIVERY' ? 40 : 0;
+    const totalAmount = order.amount + deliveryCharge;
+
+    return {
+      success: true,
+      data: {
+        order,
+        book,
+        seller: {
+          id: seller?.id || order.sellerId,
+          name: seller?.name || 'Seller',
+          email: seller?.email || '',
+        },
+        sellerUpiId,
+        buyer: {
+          id: buyer?.id || order.buyerId,
+          name: buyer?.name || 'Buyer',
+          email: buyer?.email || '',
+        },
+        payment,
+        deliveryCharge,
+        totalAmount,
+      },
+    };
+  } catch (error: any) {
+    console.error('Get order for payment error:', error);
+    return { success: false, error: error.message || 'Failed to fetch order details.' };
+  }
+}
+
+/**
+ * Legacy Create Order Action wrapper for backward compatibility
+ */
+export async function createOrderAction(
+  bookId: string,
+  deliveryMethod: 'DELIVERY' | 'PICKUP',
+  paymentMethod: 'ONLINE' | 'COD',
+  demoPaymentDetails?: { cardNumber?: string; transactionId?: string }
+) {
+  return initiateOrderPaymentAction(bookId, deliveryMethod, paymentMethod);
+}
+
 
 /**
  * Get Delivery Staff Recommendations for a specific Delivery

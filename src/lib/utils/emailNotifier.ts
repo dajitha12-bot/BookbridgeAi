@@ -188,3 +188,74 @@ export async function sendSellerOrderEmail(data: {
     html,
   });
 }
+
+/**
+ * Send Payment Link Email to Buyer Template
+ * Sent when order is created in PENDING state.
+ */
+export async function sendPaymentEmailToBuyer(data: {
+  buyerEmail: string;
+  buyerName: string;
+  orderId: string;
+  bookTitle: string;
+  sellerName: string;
+  bookAmount: number;
+  deliveryCharge: number;
+  totalAmount: number;
+  paymentUrl: string;
+}) {
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
+      <h2 style="color: #0f172a; border-bottom: 2px solid #0284c7; padding-bottom: 10px; margin-top: 0;">BookBridge – Complete Your Payment</h2>
+      <p>Hello <strong>${data.buyerName}</strong>,</p>
+      <p>Thank you for initiating your order on <strong>BookBridge</strong>! Please review your order details below and complete your payment:</p>
+      
+      <table style="width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 14px;">
+        <tr style="background-color: #f8fafc;">
+          <td style="padding: 10px; border: 1px solid #cbd5e1; font-weight: bold;">Order ID</td>
+          <td style="padding: 10px; border: 1px solid #cbd5e1;">${data.orderId}</td>
+        </tr>
+        <tr>
+          <td style="padding: 10px; border: 1px solid #cbd5e1; font-weight: bold;">Book Title</td>
+          <td style="padding: 10px; border: 1px solid #cbd5e1;">${data.bookTitle}</td>
+        </tr>
+        <tr style="background-color: #f8fafc;">
+          <td style="padding: 10px; border: 1px solid #cbd5e1; font-weight: bold;">Seller</td>
+          <td style="padding: 10px; border: 1px solid #cbd5e1;">${data.sellerName}</td>
+        </tr>
+        <tr>
+          <td style="padding: 10px; border: 1px solid #cbd5e1; font-weight: bold;">Book Price</td>
+          <td style="padding: 10px; border: 1px solid #cbd5e1;">₹${data.bookAmount}</td>
+        </tr>
+        <tr style="background-color: #f8fafc;">
+          <td style="padding: 10px; border: 1px solid #cbd5e1; font-weight: bold;">Delivery Charge</td>
+          <td style="padding: 10px; border: 1px solid #cbd5e1;">₹${data.deliveryCharge}</td>
+        </tr>
+        <tr style="background-color: #f0f9ff; font-weight: bold;">
+          <td style="padding: 10px; border: 1px solid #7dd3fc; color: #0369a1;">Total Amount</td>
+          <td style="padding: 10px; border: 1px solid #7dd3fc; color: #0369a1; font-size: 16px;">₹${data.totalAmount}</td>
+        </tr>
+      </table>
+
+      <div style="margin: 30px 0; text-align: center;">
+        <a href="${data.paymentUrl}" style="background-color: #0284c7; color: #ffffff; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px; display: inline-block; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">PAY ₹${data.totalAmount}</a>
+      </div>
+
+      <p style="font-size: 12px; color: #64748b; text-align: center; margin-top: 20px; line-height: 1.5;">
+        Or copy and paste this link into your browser:<br/>
+        <a href="${data.paymentUrl}" style="color: #0284c7;">${data.paymentUrl}</a>
+      </p>
+      
+      <p style="font-size: 11px; color: #94a3b8; text-align: center; margin-top: 25px; border-top: 1px solid #f1f5f9; padding-top: 15px;">
+        Demo UPI Payment • BookBridge AI Marketplace
+      </p>
+    </div>
+  `;
+
+  return sendEmailNotification({
+    to: data.buyerEmail,
+    subject: `BookBridge Payment Request - Order #${data.orderId} (₹${data.totalAmount})`,
+    html,
+  });
+}
+
