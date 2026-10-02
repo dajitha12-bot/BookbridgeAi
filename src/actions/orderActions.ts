@@ -102,7 +102,7 @@ export async function initiateOrderPaymentAction(
 
     if (isOnline) {
       // Dispatch Payment Request Email to Buyer
-      await sendPaymentEmailToBuyer({
+      const emailRes = await sendPaymentEmailToBuyer({
         buyerEmail,
         buyerName: session.name || 'Valued Buyer',
         orderId: newOrder.id,
@@ -112,7 +112,7 @@ export async function initiateOrderPaymentAction(
         deliveryCharge: deliveryFee,
         totalAmount,
         paymentUrl,
-      }).catch(err => console.warn('Payment email error:', err));
+      }).catch(err => ({ success: false, error: err.message }));
 
       await createNotification(
         session.id,
@@ -129,6 +129,8 @@ export async function initiateOrderPaymentAction(
         paymentUrl,
         totalAmount,
         sellerUpiId,
+        emailDispatched: emailRes?.success ?? true,
+        emailError: emailRes?.error,
       };
     } else {
       // COD Flow

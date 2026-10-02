@@ -1,3 +1,6 @@
+import fs from 'fs';
+import path from 'path';
+
 export interface EmailParams {
   to: string;
   subject: string;
@@ -5,14 +8,36 @@ export interface EmailParams {
   text?: string;
 }
 
-export async function sendEmailNotification(params: EmailParams): Promise<{ success: boolean; messageId?: string; error?: string }> {
-  const apiKey = process.env.RESEND_API_KEY || process.env.EMAIL_API_KEY;
-  const smtpUser = process.env.SMTP_USER || process.env.GMAIL_USER;
-  const rawPass = process.env.SMTP_PASS || process.env.GMAIL_APP_PASSWORD || '';
-  const smtpPass = rawPass.replace(/\s+/g, '');
-  const fromEmail = process.env.EMAIL_FROM || (smtpUser ? `BookBridge AI <${smtpUser}>` : 'BookBridge AI <notifications@bookbridge.com>');
+function getEnvVar(key: string): string | undefined {
+  if (process.env[key]) return process.env[key];
+  try {
+    const envPath = path.join(process.cwd(), '.env.local');
+    if (fs.existsSync(envPath)) {
+      const content = fs.readFileSync(envPath, 'utf8');
+      const lines = content.split(/\r?\n/);
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (trimmed.startsWith(`${key}=`)) {
+          let val = trimmed.substring(key.length + 1).trim();
+          if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+            val = val.slice(1, -1);
+          }
+          return val;
+        }
+      }
+    }
+  } catch (e) {}
+  return undefined;
+}
 
-  console.log(`[EMAIL NOTIFIER] Preparing email to ${params.to} | Subject: "${params.subject}"`);
+export async function sendEmailNotification(params: EmailParams): Promise<{ success: boolean; messageId?: string; error?: string }> {
+  const apiKey = getEnvVar('RESEND_API_KEY') || getEnvVar('EMAIL_API_KEY');
+  const smtpUser = getEnvVar('SMTP_USER') || getEnvVar('GMAIL_USER');
+  const rawPass = getEnvVar('SMTP_PASS') || getEnvVar('GMAIL_APP_PASSWORD') || '';
+  const smtpPass = rawPass.replace(/\s+/g, '');
+  const fromEmail = getEnvVar('EMAIL_FROM') || (smtpUser ? `BookBridge AI <${smtpUser}>` : 'BookBridge AI <notifications@bookbridge.com>');
+
+  console.log(`[EMAIL NOTIFIER] Preparing email to ${params.to} | Subject: "${params.subject}" | SMTP User: ${smtpUser || 'NONE'}`);
 
   // 1. Send via Gmail / SMTP if credentials provided
   if (smtpUser && smtpPass && !smtpPass.startsWith('your_')) {
@@ -37,7 +62,8 @@ export async function sendEmailNotification(params: EmailParams): Promise<{ succ
       console.log(`[EMAIL NOTIFIER] Email sent via Gmail/SMTP successfully to ${params.to}! Message ID: ${info.messageId}`);
       return { success: true, messageId: info.messageId };
     } catch (err: any) {
-      console.warn(`[EMAIL NOTIFIER] Gmail SMTP dispatch error: ${err.message}`);
+      console.error(`[EMAIL NOTIFIER] Gmail SMTP dispatch error: ${err.message}`);
+      return { success: false, error: err.message };
     }
   }
 
