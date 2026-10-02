@@ -26,7 +26,6 @@ export async function sendEmailNotification(params: EmailParams): Promise<{ succ
   }
 
   try {
-    // Attempt dispatch via Resend REST API v1
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
@@ -57,7 +56,7 @@ export async function sendEmailNotification(params: EmailParams): Promise<{ succ
 }
 
 /**
- * Send Order Confirmation Email Template
+ * Send Buyer Order Confirmation Email Template
  */
 export async function sendOrderConfirmationEmail(data: {
   buyerEmail: string;
@@ -73,26 +72,30 @@ export async function sendOrderConfirmationEmail(data: {
   orderStatus: string;
 }) {
   const html = `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; rounded: 12px;">
-      <h2 style="color: #0f172a; border-bottom: 2px solid #3b82f6; padding-bottom: 10px;">BookBridge AI – Order #${data.orderId} Confirmed</h2>
-      <p>Dear <strong>${data.buyerName}</strong>,</p>
-      <p>Thank you for purchasing on <strong>BookBridge AI</strong>. Your order has been placed successfully!</p>
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px;">
+      <h2 style="color: #0f172a; border-bottom: 2px solid #3b82f6; padding-bottom: 10px;">BookBridge – Order #${data.orderId} Confirmed</h2>
+      <p>Hello <strong>${data.buyerName}</strong>,</p>
+      <p>Your BookBridge order has been confirmed successfully!</p>
       
       <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
         <tr style="background-color: #f8fafc;">
-          <td style="padding: 8px; border: 1px solid #cbd5e1; font-weight: bold;">Book Title</td>
-          <td style="padding: 8px; border: 1px solid #cbd5e1;">${data.bookTitle}</td>
+          <td style="padding: 8px; border: 1px solid #cbd5e1; font-weight: bold;">Order ID</td>
+          <td style="padding: 8px; border: 1px solid #cbd5e1;">${data.orderId}</td>
         </tr>
         <tr>
+          <td style="padding: 8px; border: 1px solid #cbd5e1; font-weight: bold;">Book</td>
+          <td style="padding: 8px; border: 1px solid #cbd5e1;">${data.bookTitle}</td>
+        </tr>
+        <tr style="background-color: #f8fafc;">
           <td style="padding: 8px; border: 1px solid #cbd5e1; font-weight: bold;">Seller</td>
           <td style="padding: 8px; border: 1px solid #cbd5e1;">${data.sellerName} (${data.sellerUpiId})</td>
         </tr>
-        <tr style="background-color: #f8fafc;">
+        <tr>
           <td style="padding: 8px; border: 1px solid #cbd5e1; font-weight: bold;">Book Amount</td>
           <td style="padding: 8px; border: 1px solid #cbd5e1;">₹${data.bookAmount}</td>
         </tr>
-        <tr>
-          <td style="padding: 8px; border: 1px solid #cbd5e1; font-weight: bold;">Delivery Fee</td>
+        <tr style="background-color: #f8fafc;">
+          <td style="padding: 8px; border: 1px solid #cbd5e1; font-weight: bold;">Delivery Charge</td>
           <td style="padding: 8px; border: 1px solid #cbd5e1;">₹${data.deliveryCharge}</td>
         </tr>
         <tr style="background-color: #eff6ff; font-weight: bold;">
@@ -101,20 +104,87 @@ export async function sendOrderConfirmationEmail(data: {
         </tr>
         <tr>
           <td style="padding: 8px; border: 1px solid #cbd5e1; font-weight: bold;">Payment Method</td>
-          <td style="padding: 8px; border: 1px solid #cbd5e1;">${data.paymentMethod === 'ONLINE' ? 'Demo UPI Payment' : 'Cash On Delivery'}</td>
+          <td style="padding: 8px; border: 1px solid #cbd5e1;">${data.paymentMethod === 'ONLINE' ? 'Demo UPI' : 'Cash On Delivery'}</td>
+        </tr>
+        <tr style="background-color: #f8fafc;">
+          <td style="padding: 8px; border: 1px solid #cbd5e1; font-weight: bold;">Order Status</td>
+          <td style="padding: 8px; border: 1px solid #cbd5e1;">Payment Confirmed / Waiting for Admin Confirmation</td>
         </tr>
       </table>
 
-      <p style="font-size: 13px; color: #64748b;">You can track your order status and view delivery staff assignment on your BookBridge Dashboard.</p>
       <div style="margin-top: 25px; text-align: center;">
-        <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard/orders" style="background-color: #2563eb; color: #ffffff; padding: 10px 20px; text-decoration: none; border-radius: 6px; font-weight: bold;">View Order Details</a>
+        <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard/orders" style="background-color: #2563eb; color: #ffffff; padding: 10px 20px; text-decoration: none; border-radius: 6px; font-weight: bold;">View Order</a>
       </div>
+      <p style="font-size: 11px; color: #94a3b8; text-align: center; margin-top: 20px;">Thank you, <br/><strong>BookBridge Team</strong></p>
     </div>
   `;
 
   return sendEmailNotification({
     to: data.buyerEmail,
-    subject: `BookBridge AI – Order #${data.orderId} Confirmed`,
+    subject: `BookBridge - Order #${data.orderId} Confirmed`,
+    html,
+  });
+}
+
+/**
+ * Send Seller Order Notification Email Template
+ */
+export async function sendSellerOrderEmail(data: {
+  sellerEmail: string;
+  sellerName: string;
+  buyerName: string;
+  orderId: string;
+  bookTitle: string;
+  bookAmount: number;
+  sellerUpiId: string;
+}) {
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px;">
+      <h2 style="color: #0f172a; border-bottom: 2px solid #10b981; padding-bottom: 10px;">BookBridge – Your Book Has Been Ordered</h2>
+      <p>Hello <strong>${data.sellerName}</strong>,</p>
+      <p>Your book has been ordered on <strong>BookBridge</strong>!</p>
+      
+      <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+        <tr style="background-color: #f8fafc;">
+          <td style="padding: 8px; border: 1px solid #cbd5e1; font-weight: bold;">Book</td>
+          <td style="padding: 8px; border: 1px solid #cbd5e1;">${data.bookTitle}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #cbd5e1; font-weight: bold;">Buyer</td>
+          <td style="padding: 8px; border: 1px solid #cbd5e1;">${data.buyerName}</td>
+        </tr>
+        <tr style="background-color: #f8fafc;">
+          <td style="padding: 8px; border: 1px solid #cbd5e1; font-weight: bold;">Order ID</td>
+          <td style="padding: 8px; border: 1px solid #cbd5e1;">${data.orderId}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #cbd5e1; font-weight: bold;">Book Amount</td>
+          <td style="padding: 8px; border: 1px solid #cbd5e1;">₹${data.bookAmount}</td>
+        </tr>
+        <tr style="background-color: #f8fafc;">
+          <td style="padding: 8px; border: 1px solid #cbd5e1; font-weight: bold;">Payment Status</td>
+          <td style="padding: 8px; border: 1px solid #cbd5e1;">Successful (Demo UPI)</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #cbd5e1; font-weight: bold;">Seller UPI ID</td>
+          <td style="padding: 8px; border: 1px solid #cbd5e1;">${data.sellerUpiId}</td>
+        </tr>
+        <tr style="background-color: #f8fafc;">
+          <td style="padding: 8px; border: 1px solid #cbd5e1; font-weight: bold;">Order Status</td>
+          <td style="padding: 8px; border: 1px solid #cbd5e1;">Waiting for Admin Confirmation</td>
+        </tr>
+      </table>
+
+      <div style="margin-top: 25px; text-align: center;">
+        <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard/sales" style="background-color: #10b981; color: #ffffff; padding: 10px 20px; text-decoration: none; border-radius: 6px; font-weight: bold;">View Order</a>
+      </div>
+      <p style="font-size: 11px; color: #94a3b8; text-align: center; margin-top: 20px;">Thank you, <br/><strong>BookBridge Team</strong></p>
+    </div>
+  `;
+
+  return sendEmailNotification({
+    to: data.sellerEmail,
+    subject: `BookBridge - Your Book Has Been Ordered`,
     html,
   });
 }

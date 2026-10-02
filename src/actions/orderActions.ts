@@ -9,7 +9,7 @@ import { createNotification } from '../lib/db/notifications';
 import { getSession } from '../lib/auth/session';
 import { recommendDeliveryStaff } from '../lib/utils/deliveryStaffRules';
 import { getSellerUpiByUserId } from '../lib/db/sellerUpi';
-import { sendOrderConfirmationEmail } from '../lib/utils/emailNotifier';
+import { sendOrderConfirmationEmail, sendSellerOrderEmail } from '../lib/utils/emailNotifier';
 import { revalidatePath } from 'next/cache';
 
 /**
@@ -111,9 +111,9 @@ export async function createOrderAction(
       `Your order for "${book.title}" has been placed. Order ID: ${newOrder.id}. Payment: ${paymentMethod === 'ONLINE' ? 'Demo UPI Payment' : 'COD'}.`
     );
 
-    // Send Real Email Confirmation
+    // Send Real Email Confirmations to Buyer & Seller
+    const deliveryFee = deliveryMethod === 'DELIVERY' ? 40 : 0;
     if (session.email) {
-      const deliveryFee = deliveryMethod === 'DELIVERY' ? 40 : 0;
       await sendOrderConfirmationEmail({
         buyerEmail: session.email,
         buyerName: session.name,
@@ -126,7 +126,19 @@ export async function createOrderAction(
         totalAmount: book.expectedPrice + deliveryFee,
         paymentMethod,
         orderStatus,
-      }).catch(err => console.warn('Email dispatch warning:', err));
+      }).catch(err => console.warn('Buyer email dispatch warning:', err));
+    }
+
+    if (seller.email) {
+      await sendSellerOrderEmail({
+        sellerEmail: seller.email,
+        sellerName: seller.name,
+        buyerName: session.name,
+        orderId: newOrder.id,
+        bookTitle: book.title,
+        bookAmount: book.expectedPrice,
+        sellerUpiId,
+      }).catch(err => console.warn('Seller email dispatch warning:', err));
     }
 
     revalidatePath('/dashboard/orders');
