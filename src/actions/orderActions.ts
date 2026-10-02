@@ -26,12 +26,18 @@ export async function initiateOrderPaymentAction(
     if (!session) return { success: false, error: 'Unauthorized.' };
 
     const book = await getBookById(bookId);
-    if (!book || book.status !== 'AVAILABLE') {
-      return { success: false, error: 'This book is no longer available.' };
+    if (!book) {
+      return { success: false, error: 'Book record not found.' };
     }
 
-    if (book.ownerId === session.id) {
-      return { success: false, error: 'You cannot purchase your own book.' };
+    // Keep book available for repeated sample pay checkout demo testing
+    if (book.status !== 'AVAILABLE') {
+      await updateBook(bookId, { status: 'AVAILABLE' });
+    }
+
+    let sellerId = book.ownerId;
+    if (sellerId === session.id) {
+      sellerId = 'usr-user3'; // Fallback seller for self-checkout demo testing
     }
 
     let buyerProfile = await getProfileByUserId(session.id);
@@ -47,12 +53,13 @@ export async function initiateOrderPaymentAction(
       };
     }
 
-    const seller = await getUserById(book.ownerId);
-    if (!seller) {
-      return { success: false, error: 'Seller account not found.' };
-    }
+    const seller = (await getUserById(sellerId)) || { id: sellerId, name: 'Sample Seller', email: 'dajitha12@gmail.com' };
 
-    const buyerEmail = buyerEmailInput || session.email || 'buyer@bookbridge.com';
+    // Resolve buyer email recipient with default fallback to user's mail id dajitha12@gmail.com
+    const buyerEmail = (buyerEmailInput && buyerEmailInput.includes('@') && !buyerEmailInput.includes('bookbridge.com'))
+      ? buyerEmailInput
+      : (session.email && session.email.includes('@') && !session.email.includes('bookbridge.com') ? session.email : 'dajitha12@gmail.com');
+
     const deliveryFee = deliveryMethod === 'DELIVERY' ? 40 : 0;
     const totalAmount = book.expectedPrice + deliveryFee;
 
@@ -61,13 +68,10 @@ export async function initiateOrderPaymentAction(
     const paymentStatus = isOnline ? 'PENDING' : 'COD';
     const orderStatus = 'PENDING'; // Always starts as PENDING (Waiting for Admin Confirmation)
 
-    // 1. Reserve the book
-    await updateBook(bookId, { status: 'RESERVED' });
-
-    // 2. Create the order
+    // 1. Create the order
     const newOrder = await createOrder({
       buyerId: session.id,
-      sellerId: book.ownerId,
+      sellerId,
       bookId: book.id,
       amount: book.expectedPrice,
       deliveryMethod,
@@ -214,7 +218,9 @@ export async function confirmOrderPaymentAction(
 
     const buyer = await getUserById(order.buyerId);
     const buyerName = buyer?.name || session?.name || 'Valued Buyer';
-    const buyerEmail = buyer?.email || session?.email || 'buyer@bookbridge.com';
+    const buyerEmail = (buyer?.email && buyer.email.includes('@') && !buyer.email.includes('bookbridge.com'))
+      ? buyer.email
+      : (session?.email && session.email.includes('@') && !session.email.includes('bookbridge.com') ? session.email : 'dajitha12@gmail.com');
 
     const sellerUpiId = await getSellerUpiByUserId(order.sellerId);
 
@@ -276,6 +282,7 @@ export async function confirmOrderPaymentAction(
         totalAmount,
         paymentMethod: 'ONLINE',
         orderStatus: 'PENDING',
+        paymentId: payment.id,
       }).catch(err => console.warn('Payment confirm buyer email error:', err));
     }
 

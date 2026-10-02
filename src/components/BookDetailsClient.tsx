@@ -44,7 +44,7 @@ export default function BookDetailsClient({
   const [showCheckout, setShowCheckout] = useState(false);
   const [deliveryMethod, setDeliveryMethod] = useState<'DELIVERY' | 'PICKUP'>('DELIVERY');
   const [paymentMethod, setPaymentMethod] = useState<'ONLINE' | 'COD'>('ONLINE');
-  const [buyerEmail, setBuyerEmail] = useState('');
+  const [buyerEmail, setBuyerEmail] = useState('dajitha12@gmail.com');
   const [address, setAddress] = useState(book.owner.profile?.address || '');
   const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
   const [initiatedOrder, setInitiatedOrder] = useState<{
