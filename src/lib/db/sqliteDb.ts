@@ -443,6 +443,36 @@ export function initDatabase() {
       FOREIGN KEY (delivery_id) REFERENCES deliveries(id) ON DELETE CASCADE
     );
 
+    -- 29. Staff Earnings Table
+    CREATE TABLE IF NOT EXISTS staff_earnings (
+      id TEXT PRIMARY KEY,
+      staff_id TEXT NOT NULL,
+      delivery_id TEXT NOT NULL,
+      order_id TEXT,
+      delivery_charge REAL DEFAULT 40.0,
+      earning_amount REAL DEFAULT 20.0,
+      status TEXT DEFAULT 'COMPLETED',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      paid_at DATETIME,
+      FOREIGN KEY (staff_id) REFERENCES users(id) ON DELETE CASCADE,
+      FOREIGN KEY (delivery_id) REFERENCES deliveries(id) ON DELETE CASCADE,
+      UNIQUE(staff_id, delivery_id)
+    );
+
+    -- 30. Delivery Tracking Events Table
+    CREATE TABLE IF NOT EXISTS delivery_tracking_events (
+      id TEXT PRIMARY KEY,
+      order_id TEXT NOT NULL,
+      delivery_id TEXT,
+      status TEXT NOT NULL,
+      stage_name TEXT NOT NULL,
+      location_name TEXT,
+      description TEXT,
+      event_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE
+    );
+
     -- Create Indexes for Query Performance
     CREATE INDEX IF NOT EXISTS idx_books_owner ON books(owner_id);
     CREATE INDEX IF NOT EXISTS idx_books_category ON books(category);
@@ -453,6 +483,8 @@ export function initDatabase() {
     CREATE INDEX IF NOT EXISTS idx_rentals_renter ON rentals(renter_id);
     CREATE INDEX IF NOT EXISTS idx_search_query ON search_activity(query);
     CREATE INDEX IF NOT EXISTS idx_chat_conv ON chat_conversations(book_id, buyer_id, seller_id);
+    CREATE INDEX IF NOT EXISTS idx_staff_earnings_staff ON staff_earnings(staff_id);
+    CREATE INDEX IF NOT EXISTS idx_tracking_events_order ON delivery_tracking_events(order_id);
   `);
 
   // Initialize delivery settings default row if missing
