@@ -54,7 +54,7 @@ export async function getBookById(id: string): Promise<Book | null> {
 
 export async function getBooksByOwner(ownerId: string): Promise<Book[]> {
   // Return books owned by exact ownerId or normalized fallback user
-  const rows = db.prepare('SELECT * FROM books WHERE owner_id = ? OR (owner_id = "usr-user1" AND ? = "usr-user1") ORDER BY created_at DESC').all(ownerId, ownerId);
+  const rows = db.prepare("SELECT * FROM books WHERE owner_id = ? OR (owner_id = 'usr-user1' AND ? = 'usr-user1') ORDER BY created_at DESC").all(ownerId, ownerId);
   return rows.map(mapRowToBook);
 }
 
