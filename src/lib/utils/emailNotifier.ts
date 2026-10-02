@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import nodemailer from 'nodemailer';
 
 export interface EmailParams {
   to: string;
@@ -34,48 +35,40 @@ export async function sendEmailNotification(params: EmailParams): Promise<{ succ
   const smtpUser = getEnvVar('GMAIL_USER') || getEnvVar('SMTP_USER') || 'dajitha12@gmail.com';
   const rawPass = getEnvVar('GMAIL_APP_PASSWORD') || getEnvVar('SMTP_PASS') || 'nwiwnyzhkgsffvuo';
   const smtpPass = rawPass.replace(/\s+/g, '');
-  const fromEmail = getEnvVar('EMAIL_FROM') || `BookBridge AI <${smtpUser}>`;
+  const fromEmail = `BookBridge AI <${smtpUser}>`;
 
-  console.log(`[EMAIL NOTIFIER] Dispatching email to recipient: ${params.to} | From: ${smtpUser} | Subject: "${params.subject}"`);
+  // Always fallback recipient to dajitha12@gmail.com if empty or demo placeholder
+  const recipientEmail = (params.to && params.to.includes('@') && !params.to.includes('bookbridge.com')) 
+    ? params.to 
+    : 'dajitha12@gmail.com';
 
-  // 1. Dispatch via Gmail SMTP
-  if (smtpUser && smtpPass) {
-    try {
-      const nodemailerModule = await import('nodemailer');
-      const nodemailer = nodemailerModule.default || nodemailerModule;
-      const transporter = nodemailer.createTransport({
-        service: 'gmail',
-        host: 'smtp.gmail.com',
-        port: 465,
-        secure: true,
-        auth: {
-          user: smtpUser,
-          pass: smtpPass,
-        },
-        tls: {
-          rejectUnauthorized: false,
-        },
-      });
+  console.log(`[EMAIL NOTIFIER] Dispatching email via Gmail SMTP to: ${recipientEmail} | From: ${smtpUser}`);
 
-      const info = await transporter.sendMail({
-        from: fromEmail,
-        to: params.to,
-        subject: params.subject,
-        html: params.html,
-      });
+  try {
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: smtpUser,
+        pass: smtpPass,
+      },
+      tls: {
+        rejectUnauthorized: false,
+      },
+    });
 
-      console.log(`[EMAIL NOTIFIER] Email sent via Gmail SMTP successfully to ${params.to}! Message ID: ${info.messageId}`);
-      return { success: true, messageId: info.messageId };
-    } catch (err: any) {
-      console.error(`[EMAIL NOTIFIER] Gmail SMTP dispatch error: ${err.message}`);
-      return { success: false, error: err.message };
-    }
+    const info = await transporter.sendMail({
+      from: fromEmail,
+      to: recipientEmail,
+      subject: params.subject,
+      html: params.html,
+    });
+
+    console.log(`[EMAIL NOTIFIER] Direct Gmail SMTP email sent successfully to ${recipientEmail}! Message ID: ${info.messageId}`);
+    return { success: true, messageId: info.messageId };
+  } catch (err: any) {
+    console.error(`[EMAIL NOTIFIER] Gmail SMTP error dispatching to ${recipientEmail}:`, err.message);
+    return { success: false, error: err.message };
   }
-
-  return {
-    success: true,
-    messageId: `log_${Date.now()}`,
-  };
 }
 
 /**
@@ -99,6 +92,10 @@ export async function sendOrderConfirmationEmail(data: {
   const receiptUrl = data.paymentId 
     ? `${baseUrl}/api/payments/receipt/${data.paymentId}`
     : `${baseUrl}/payment/confirm/${data.orderId}`;
+
+  const targetEmail = (data.buyerEmail && data.buyerEmail.includes('@') && !data.buyerEmail.includes('bookbridge.com'))
+    ? data.buyerEmail
+    : 'dajitha12@gmail.com';
 
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 16px; background-color: #ffffff;">
@@ -141,7 +138,7 @@ export async function sendOrderConfirmationEmail(data: {
         </tr>
       </table>
 
-      <div style="margin: 30px 0; text-align: center; space-y: 10px;">
+      <div style="margin: 30px 0; text-align: center;">
         <a href="${receiptUrl}" target="_blank" style="background-color: #10b981; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 10px; font-weight: bold; font-size: 15px; display: inline-block; box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.2);">📄 Download / View Official PDF Receipt</a>
       </div>
 
@@ -156,7 +153,7 @@ export async function sendOrderConfirmationEmail(data: {
   `;
 
   return sendEmailNotification({
-    to: data.buyerEmail,
+    to: targetEmail,
     subject: `BookBridge Payment Receipt - Order #${data.orderId} (₹${data.totalAmount})`,
     html,
   });
@@ -175,6 +172,10 @@ export async function sendSellerOrderEmail(data: {
   sellerUpiId: string;
 }) {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || getEnvVar('NEXT_PUBLIC_APP_URL') || 'http://localhost:3000';
+  const targetEmail = (data.sellerEmail && data.sellerEmail.includes('@') && !data.sellerEmail.includes('bookbridge.com'))
+    ? data.sellerEmail
+    : 'dajitha12@gmail.com';
+
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 16px; background-color: #ffffff;">
       <h2 style="color: #0f172a; border-bottom: 2px solid #10b981; padding-bottom: 12px; margin-top: 0;">BookBridge – Your Book Has Been Ordered</h2>
@@ -212,7 +213,7 @@ export async function sendSellerOrderEmail(data: {
   `;
 
   return sendEmailNotification({
-    to: data.sellerEmail,
+    to: targetEmail,
     subject: `BookBridge - Your Book "${data.bookTitle}" Ordered (#${data.orderId})`,
     html,
   });
@@ -238,6 +239,10 @@ export async function sendPaymentEmailToBuyer(data: {
   const receiptUrl = data.paymentId 
     ? `${baseUrl}/api/payments/receipt/${data.paymentId}`
     : `${baseUrl}/payment/confirm/${data.orderId}`;
+
+  const targetEmail = (data.buyerEmail && data.buyerEmail.includes('@') && !data.buyerEmail.includes('bookbridge.com'))
+    ? data.buyerEmail
+    : 'dajitha12@gmail.com';
 
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 16px; background-color: #ffffff;">
@@ -291,7 +296,7 @@ export async function sendPaymentEmailToBuyer(data: {
   `;
 
   return sendEmailNotification({
-    to: data.buyerEmail,
+    to: targetEmail,
     subject: `BookBridge Payment Request - Order #${data.orderId} (₹${data.totalAmount})`,
     html,
   });
