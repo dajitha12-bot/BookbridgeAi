@@ -60,6 +60,13 @@ export default function MyBooksClient({
   const [listedBooks, setListedBooks] = useState(initialListedBooks);
   const [wishlist, setWishlist] = useState(initialWishlist);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'AVAILABLE' | 'RENTED' | 'SOLD' | 'EXCHANGED' | 'DONATED'>('ALL');
+
+  const filteredListedBooks = listedBooks.filter((book) => {
+    const st = book.displayStatus || book.status || 'AVAILABLE';
+    if (statusFilter === 'ALL') return true;
+    return st === statusFilter;
+  });
 
   const navTabs = [
     { id: 'listed', label: 'My Listed Books', count: listedBooks.length, icon: BookOpen },
@@ -160,17 +167,43 @@ export default function MyBooksClient({
         })}
       </div>
 
+
       {/* ========================================================
           TAB 1: MY LISTED BOOKS
          ======================================================== */}
       {activeTab === 'listed' && (
-        <div className="space-y-4">
-          {listedBooks.length === 0 ? (
+        <div className="space-y-5">
+          {/* Filter Pills Bar */}
+          <div className="flex flex-wrap items-center gap-2 bg-slate-50 p-2 rounded-xl border border-slate-200/80 text-xs font-bold">
+            <span className="text-slate-400 text-[11px] uppercase tracking-wider px-2 font-semibold">Filter Status:</span>
+            {[
+              { id: 'ALL', label: 'All Listings' },
+              { id: 'AVAILABLE', label: 'Available' },
+              { id: 'RENTED', label: 'Rented (Pending Return)' },
+              { id: 'SOLD', label: 'Sold' },
+              { id: 'EXCHANGED', label: 'Exchanged' },
+              { id: 'DONATED', label: 'Donated' },
+            ].map((f) => (
+              <button
+                key={f.id}
+                onClick={() => setStatusFilter(f.id as any)}
+                className={`px-3 py-1.5 rounded-lg text-xs transition-all cursor-pointer ${
+                  statusFilter === f.id
+                    ? 'bg-blue-600 text-white shadow-xs'
+                    : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/60'
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+
+          {filteredListedBooks.length === 0 ? (
             <div className="bg-white rounded-2xl border border-dashed border-slate-200 py-16 text-center text-slate-500 space-y-4">
               <BookOpen className="w-12 h-12 mx-auto text-slate-300" />
-              <h3 className="font-bold text-slate-700 text-base">No Book Listings Found</h3>
+              <h3 className="font-bold text-slate-700 text-base">No Books Found ({statusFilter})</h3>
               <p className="text-xs text-slate-400 max-w-xs mx-auto">
-                You haven't posted any books yet. Click Add New Book to publish your textbook for sale or exchange!
+                No book listings currently match the selected status filter.
               </p>
               <Link
                 href="/dashboard/add-book"
@@ -182,64 +215,99 @@ export default function MyBooksClient({
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {listedBooks.map((book) => (
-                <div
-                  key={book.id}
-                  className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-between hover:border-blue-200 transition-all"
-                >
-                  <div>
-                    <div className="w-full h-40 bg-slate-50 rounded-xl overflow-hidden flex items-center justify-center relative mb-4">
-                      {book.imageUrl ? (
-                        <img src={book.imageUrl} alt={book.title} className="w-full h-full object-cover" />
-                      ) : (
-                        <BookOpen className="w-12 h-12 text-slate-300" />
-                      )}
-                      <span
-                        className={`absolute top-3 right-3 px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase ${
-                          book.status === 'AVAILABLE'
-                            ? 'bg-emerald-50 text-emerald-600 border border-emerald-100'
-                            : book.status === 'SOLD'
-                            ? 'bg-slate-100 text-slate-500 border border-slate-200'
-                            : 'bg-blue-50 text-blue-600 border border-blue-100'
-                        }`}
-                      >
-                        {book.status}
-                      </span>
-                    </div>
-                    <h3 className="font-bold text-slate-800 text-sm line-clamp-1">{book.title}</h3>
-                    <p className="text-xs text-slate-400 line-clamp-1">by {book.author}</p>
-                    <div className="text-xs text-blue-600 font-semibold mt-1">{book.category}</div>
-                  </div>
+              {filteredListedBooks.map((book) => {
+                const displayStatus = book.displayStatus || book.status || 'AVAILABLE';
 
-                  <div className="mt-5 pt-3.5 border-t border-slate-50 flex items-center justify-between">
-                    <span className="font-extrabold text-slate-800 text-base">₹{book.expectedPrice}</span>
-                    <div className="flex space-x-1.5">
-                      <Link
-                        href={`/books/${book.id}`}
-                        className="p-2 bg-slate-50 hover:bg-blue-50 text-slate-500 hover:text-blue-600 rounded-lg transition-colors border border-slate-100"
-                        title="View details"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </Link>
-                      <button
-                        onClick={() => handleToggleStatus(book.id, book.status)}
-                        className="p-2 bg-slate-50 hover:bg-amber-50 text-slate-500 hover:text-amber-600 rounded-lg transition-colors border border-slate-100 cursor-pointer"
-                        title={book.status === 'UNAVAILABLE' ? 'Make available' : 'Make unavailable'}
-                      >
-                        {book.status === 'UNAVAILABLE' ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-                      </button>
-                      <button
-                        disabled={deletingId === book.id}
-                        onClick={() => handleDeleteBook(book.id)}
-                        className="p-2 bg-slate-50 hover:bg-rose-50 text-slate-500 hover:text-rose-600 rounded-lg transition-colors border border-slate-100 cursor-pointer"
-                        title="Delete listing"
-                      >
-                        <Trash className="w-4 h-4" />
-                      </button>
+                return (
+                  <div
+                    key={book.id}
+                    className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-between hover:border-blue-200 transition-all"
+                  >
+                    <div>
+                      <div className="w-full h-40 bg-slate-50 rounded-xl overflow-hidden flex items-center justify-center relative mb-4">
+                        {book.imageUrl ? (
+                          <img src={book.imageUrl} alt={book.title} className="w-full h-full object-cover" />
+                        ) : (
+                          <BookOpen className="w-12 h-12 text-slate-300" />
+                        )}
+                        <span
+                          className={`absolute top-3 right-3 px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase shadow-sm ${
+                            displayStatus === 'AVAILABLE'
+                              ? 'bg-emerald-500 text-white'
+                              : displayStatus === 'RENTED'
+                              ? 'bg-sky-500 text-white'
+                              : displayStatus === 'SOLD'
+                              ? 'bg-slate-700 text-white'
+                              : displayStatus === 'EXCHANGED'
+                              ? 'bg-amber-500 text-white'
+                              : 'bg-indigo-500 text-white'
+                          }`}
+                        >
+                          {displayStatus}
+                        </span>
+                      </div>
+
+                      <h3 className="font-bold text-slate-800 text-sm line-clamp-1">{book.title}</h3>
+                      <p className="text-xs text-slate-400 line-clamp-1">by {book.author}</p>
+                      <div className="text-xs text-blue-600 font-semibold mt-1">{book.category}</div>
+
+                      {/* Dynamic status metadata box */}
+                      {displayStatus === 'RENTED' && book.rentalDueDate && (
+                        <div className="mt-3 bg-sky-50 border border-sky-200 p-2.5 rounded-xl text-[11px] text-sky-800 font-medium flex items-center gap-1.5">
+                          <Clock className="w-3.5 h-3.5 text-sky-600 flex-shrink-0" />
+                          <span>Return Due: <strong>{new Date(book.rentalDueDate).toLocaleDateString()}</strong> (Pending)</span>
+                        </div>
+                      )}
+
+                      {displayStatus === 'SOLD' && (
+                        <div className="mt-3 bg-slate-100 border border-slate-200 p-2.5 rounded-xl text-[11px] text-slate-700 font-medium">
+                          Sold to: <strong>{book.saleBuyer || 'Community Buyer'}</strong>
+                        </div>
+                      )}
+
+                      {displayStatus === 'EXCHANGED' && (
+                        <div className="mt-3 bg-amber-50 border border-amber-200 p-2.5 rounded-xl text-[11px] text-amber-800 font-medium">
+                          Swapped via Book Exchange
+                        </div>
+                      )}
+
+                      {displayStatus === 'DONATED' && (
+                        <div className="mt-3 bg-indigo-50 border border-indigo-200 p-2.5 rounded-xl text-[11px] text-indigo-800 font-medium">
+                          Community Donation Item (Free)
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="mt-5 pt-3.5 border-t border-slate-50 flex items-center justify-between">
+                      <span className="font-extrabold text-slate-800 text-base">₹{book.expectedPrice}</span>
+                      <div className="flex space-x-1.5">
+                        <Link
+                          href={`/books/${book.id}`}
+                          className="p-2 bg-slate-50 hover:bg-blue-50 text-slate-500 hover:text-blue-600 rounded-lg transition-colors border border-slate-100"
+                          title="View details"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Link>
+                        <button
+                          onClick={() => handleToggleStatus(book.id, book.status)}
+                          className="p-2 bg-slate-50 hover:bg-amber-50 text-slate-500 hover:text-amber-600 rounded-lg transition-colors border border-slate-100 cursor-pointer"
+                          title={book.status === 'UNAVAILABLE' ? 'Make available' : 'Make unavailable'}
+                        >
+                          {book.status === 'UNAVAILABLE' ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                        </button>
+                        <button
+                          disabled={deletingId === book.id}
+                          onClick={() => handleDeleteBook(book.id)}
+                          className="p-2 bg-slate-50 hover:bg-rose-50 text-slate-500 hover:text-rose-600 rounded-lg transition-colors border border-slate-100 cursor-pointer"
+                          title="Delete listing"
+                        >
+                          <Trash className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

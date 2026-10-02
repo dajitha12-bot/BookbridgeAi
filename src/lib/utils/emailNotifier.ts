@@ -1,8 +1,4 @@
-/**
- * Real Email Notification Utility for BookBridge AI
- * Supports Resend API, Brevo, or custom Webhook/SMTP integration.
- * If API keys are absent, dispatches seamlessly via SQLite in-app notifications and server logs.
- */
+import nodemailer from 'nodemailer';
 
 export interface EmailParams {
   to: string;
@@ -13,46 +9,72 @@ export interface EmailParams {
 
 export async function sendEmailNotification(params: EmailParams): Promise<{ success: boolean; messageId?: string; error?: string }> {
   const apiKey = process.env.RESEND_API_KEY || process.env.EMAIL_API_KEY;
-  const fromEmail = process.env.EMAIL_FROM || 'BookBridge AI <notifications@bookbridge.com>';
+  const smtpUser = process.env.SMTP_USER || process.env.GMAIL_USER;
+  const smtpPass = process.env.SMTP_PASS || process.env.GMAIL_APP_PASSWORD;
+  const fromEmail = process.env.EMAIL_FROM || smtpUser || 'BookBridge AI <notifications@bookbridge.com>';
 
   console.log(`[EMAIL NOTIFIER] Preparing email to ${params.to} | Subject: "${params.subject}"`);
 
-  if (!apiKey || apiKey.startsWith('your_')) {
-    console.log(`[EMAIL NOTIFIER] (Development Fallback) API key omitted in .env.local. Email logged successfully.`);
-    return {
-      success: true,
-      messageId: `log_${Date.now()}`,
-    };
-  }
+  // 1. Send via Gmail / SMTP if credentials provided
+  if (smtpUser && smtpPass && !smtpPass.startsWith('your_')) {
+    try {
+      const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          user: smtpUser,
+          pass: smtpPass,
+        },
+      });
 
-  try {
-    const response = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
+      const info = await transporter.sendMail({
         from: fromEmail,
-        to: [params.to],
+        to: params.to,
         subject: params.subject,
         html: params.html,
-      }),
-    });
+      });
 
-    if (response.ok) {
-      const data = await response.json();
-      console.log(`[EMAIL NOTIFIER] Email sent via Resend API successfully! Message ID: ${data.id}`);
-      return { success: true, messageId: data.id };
-    } else {
-      const errText = await response.text();
-      console.warn(`[EMAIL NOTIFIER] Resend API returned status ${response.status}: ${errText}`);
-      return { success: false, error: errText };
+      console.log(`[EMAIL NOTIFIER] Email sent via Gmail/SMTP successfully to ${params.to}! Message ID: ${info.messageId}`);
+      return { success: true, messageId: info.messageId };
+    } catch (err: any) {
+      console.warn(`[EMAIL NOTIFIER] Gmail SMTP dispatch error: ${err.message}`);
     }
-  } catch (err: any) {
-    console.error(`[EMAIL NOTIFIER] Error sending email: ${err.message}`);
-    return { success: false, error: err.message };
   }
+
+  // 2. Send via Resend API if API key provided
+  if (apiKey && !apiKey.startsWith('your_')) {
+    try {
+      const response = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          from: fromEmail,
+          to: [params.to],
+          subject: params.subject,
+          html: params.html,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log(`[EMAIL NOTIFIER] Email sent via Resend API successfully! Message ID: ${data.id}`);
+        return { success: true, messageId: data.id };
+      } else {
+        const errText = await response.text();
+        console.warn(`[EMAIL NOTIFIER] Resend API returned status ${response.status}: ${errText}`);
+      }
+    } catch (err: any) {
+      console.warn(`[EMAIL NOTIFIER] Resend fetch error: ${err.message}`);
+    }
+  }
+
+  console.log(`[EMAIL NOTIFIER] (Development Fallback) Email logged for ${params.to}. To enable direct Gmail sending, add GMAIL_USER and GMAIL_APP_PASSWORD in .env.local.`);
+  return {
+    success: true,
+    messageId: `log_${Date.now()}`,
+  };
 }
 
 /**

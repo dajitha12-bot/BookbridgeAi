@@ -71,11 +71,54 @@ export default async function MyBooksPage() {
   // 8. Donated Books
   const myDonatedBooks = listedBooks.filter(b => b.donationAvailable === true);
 
+  // Augment listed books with computed status & return due date details
+  const listedBooksDetailed = await Promise.all(
+    listedBooks.map(async (book) => {
+      const rental = allRentals.find(r => r.bookId === book.id && (r.status === 'ACTIVE' || r.status === 'RENTED'));
+      if (rental) {
+        return {
+          ...book,
+          displayStatus: 'RENTED',
+          rentalDueDate: rental.endDate,
+        };
+      }
+
+      const sale = mySales.find(s => s.bookId === book.id);
+      if (sale || book.status === 'SOLD') {
+        return {
+          ...book,
+          displayStatus: 'SOLD',
+          buyerName: sale?.buyer?.name,
+        };
+      }
+
+      const exchange = userExchangesRaw.find(e => (e.offeredBookId === book.id || e.requestedBookId === book.id) && e.status === 'ACCEPTED');
+      if (exchange) {
+        return {
+          ...book,
+          displayStatus: 'EXCHANGED',
+        };
+      }
+
+      if (book.donationAvailable) {
+        return {
+          ...book,
+          displayStatus: 'DONATED',
+        };
+      }
+
+      return {
+        ...book,
+        displayStatus: book.status || 'AVAILABLE',
+      };
+    })
+  );
+
   return (
     <MyBooksClient
       userId={currentUserId}
       userName={session.name || 'Ajitha'}
-      initialListedBooks={listedBooks}
+      initialListedBooks={listedBooksDetailed}
       initialWishlist={wishlist}
       initialOrders={myOrders}
       initialRentals={myRentals}
@@ -86,3 +129,4 @@ export default async function MyBooksPage() {
     />
   );
 }
+
