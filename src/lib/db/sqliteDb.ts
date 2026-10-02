@@ -677,6 +677,25 @@ function seedInitialData() {
   insertDelivery.run('del-1', 'ord-1', null, null, 'usr-staff1', 'ORDER', '8, Bypass Road, Velachery', '10, Kasturiba Nagar, Adyar', 'IN_TRANSIT', 4.5, 30.0);
   insertDelivery.run('del-2', null, 'rent-1', null, 'usr-staff1', 'RENTAL', '14, Luz Church Road, Mylapore', '10, Kasturiba Nagar, Adyar', 'DELIVERED', 5.2, 40.0);
 
+  // Sample Assigned Rental Delivery (Part 7 Requirement)
+  insertDelivery.run('del-3', null, 'rent-2', null, 'usr-staff1', 'RENTAL', '14, Luz Church Road, Mylapore, Chennai', '10, Kasturiba Nagar, Adyar, Chennai', 'ASSIGNED', 6.0, 40.0);
+
+  // Insert Buyer-Seller Demo Chat Conversation & Messages
+  const insertChatConv = db.prepare(`
+    INSERT INTO chat_conversations (id, book_id, buyer_id, seller_id, created_at, updated_at)
+    VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+  `);
+
+  const insertChatMessage = db.prepare(`
+    INSERT INTO chat_messages (id, conversation_id, sender_id, message, created_at)
+    VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+  `);
+
+  insertChatConv.run('conv-1', 'bk-1', 'usr-user1', 'usr-user3');
+  insertChatMessage.run('msg-1', 'conv-1', 'usr-user1', 'Hi Priya! Is this Python Crash Course textbook available for sale or exchange?');
+  insertChatMessage.run('msg-2', 'conv-1', 'usr-user3', 'Hello Ajitha! Yes, it is in very good condition and available for delivery.');
+
+
   // Insert Payments
   const insertPayment = db.prepare(`
     INSERT INTO payments (id, order_id, rental_id, user_id, amount, delivery_charge, security_deposit, total_amount, method, status, transaction_id, refund_status)

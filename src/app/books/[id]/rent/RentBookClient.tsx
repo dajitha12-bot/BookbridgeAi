@@ -24,12 +24,13 @@ export default function RentBookClient({ book }: RentBookClientProps) {
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Fee calculation math
-  const baseFee = 50;
+  // 2-Leg Rental Fee Calculation Breakdown
   const ratePerDay = 10;
-  const securityDeposit = 100;
   const rentalFee = duration * ratePerDay;
-  const totalAmount = baseFee + rentalFee + securityDeposit;
+  const securityDeposit = 100;
+  const initialDeliveryCharge = deliveryMethod === 'DELIVERY' ? 30 : 0;
+  const returnDeliveryCharge = deliveryMethod === 'DELIVERY' ? 30 : 0;
+  const totalAmount = rentalFee + securityDeposit + initialDeliveryCharge + returnDeliveryCharge;
 
   const [buyerEmailInput, setBuyerEmailInput] = useState('');
 
@@ -173,26 +174,34 @@ export default function RentBookClient({ book }: RentBookClientProps) {
               </div>
             </div>
 
-            {/* 3. Fee breakdown */}
-            <div className="bg-slate-50 border border-slate-100 p-4 rounded-xl space-y-3 font-sans">
-              <div className="flex justify-between text-xs text-slate-500 font-medium">
-                <span>Base Service Fee</span>
-                <span>₹{baseFee}</span>
+            {/* 3. Detailed 2-Leg Fee Breakdown */}
+            <div className="bg-slate-50 border border-slate-100 p-4 rounded-xl space-y-2 font-sans">
+              <div className="flex justify-between text-xs text-slate-600 font-medium">
+                <span>Rental Duration Fee ({duration} Days @ ₹10/day)</span>
+                <span className="font-bold text-slate-800">₹{rentalFee}</span>
               </div>
-              <div className="flex justify-between text-xs text-slate-500 font-medium">
-                <span>Rental Duration Fee ({duration} days)</span>
-                <span>₹{rentalFee}</span>
-              </div>
-              <div className="flex justify-between text-xs text-slate-500 font-medium pb-2 border-b border-slate-200">
+              <div className="flex justify-between text-xs text-slate-600 font-medium">
                 <span className="flex items-center gap-1.5">
                   <span>Refundable Security Deposit</span>
-                  <span className="text-[9px] bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded-sm font-bold">Returned</span>
+                  <span className="text-[9px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded font-bold">100% Refundable</span>
                 </span>
-                <span>₹{securityDeposit}</span>
+                <span className="font-bold text-slate-800">₹{securityDeposit}</span>
               </div>
-              <div className="flex justify-between text-sm font-extrabold text-slate-800">
-                <span>Total Calculated Payment</span>
-                <span className="text-blue-600 text-base">₹{totalAmount}</span>
+              {deliveryMethod === 'DELIVERY' && (
+                <>
+                  <div className="flex justify-between text-xs text-slate-600 font-medium">
+                    <span>Initial Delivery Charge (Leg 1: Owner &rarr; Renter)</span>
+                    <span className="font-bold text-slate-800">₹{initialDeliveryCharge}</span>
+                  </div>
+                  <div className="flex justify-between text-xs text-slate-600 font-medium">
+                    <span>Return Delivery Charge (Leg 2: Renter &rarr; Owner)</span>
+                    <span className="font-bold text-slate-800">₹{returnDeliveryCharge}</span>
+                  </div>
+                </>
+              )}
+              <div className="flex justify-between text-sm font-extrabold text-slate-900 pt-2 border-t border-slate-200">
+                <span>Total Payment Required</span>
+                <span className="text-blue-600 text-base font-black">₹{totalAmount}</span>
               </div>
             </div>
 

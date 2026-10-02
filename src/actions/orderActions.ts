@@ -513,7 +513,8 @@ export async function updateDeliveryStatusAction(deliveryId: string, status: str
 
     // 2. Map order status matching delivery status
     let orderStatus = 'PROCESSING';
-    if (status === 'PICKED_UP') orderStatus = 'PICKED_UP';
+    if (status === 'REACHED_SELLER') orderStatus = 'PROCESSING';
+    else if (status === 'PICKED_UP' || status === 'BOOK_RECEIVED') orderStatus = 'IN_TRANSIT';
     else if (status === 'IN_TRANSIT') orderStatus = 'IN_TRANSIT';
     else if (status === 'OUT_FOR_DELIVERY') orderStatus = 'OUT_FOR_DELIVERY';
     else if (status === 'DELIVERED') orderStatus = 'DELIVERED';

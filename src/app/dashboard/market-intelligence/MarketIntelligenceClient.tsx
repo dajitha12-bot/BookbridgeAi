@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   TrendingUp,
   Brain,
@@ -14,207 +14,382 @@ import {
   BarChart3,
   ArrowUpRight,
   Info,
+  Calendar,
+  Layers,
+  MapPin,
+  BookOpen,
 } from 'lucide-react';
+import { getMarketAnalyticsAction, MarketAnalyticsData } from '../../../actions/marketActions';
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+} from 'recharts';
 
 interface MarketIntelligenceClientProps {
   initialSummary: any;
 }
 
-export default function MarketIntelligenceClient({ initialSummary }: MarketIntelligenceClientProps) {
-  const [selectedCategory, setSelectedCategory] = useState<string>('All');
-  const insights = initialSummary.insights || [];
-  const chartData = initialSummary.priceTrendChartData || [];
+const CATEGORY_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4'];
 
-  const filteredInsights = selectedCategory === 'All'
-    ? insights
-    : insights.filter((i: any) => i.category === selectedCategory);
+export default function MarketIntelligenceClient({ initialSummary }: MarketIntelligenceClientProps) {
+  const [periodDays, setPeriodDays] = useState<number>(30);
+  const [analytics, setAnalytics] = useState<MarketAnalyticsData | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  // Fetch real analytics from SQLite action
+  const fetchAnalytics = async (days: number) => {
+    setIsLoading(true);
+    try {
+      const res = await getMarketAnalyticsAction(days);
+      if (res.success && res.data) {
+        setAnalytics(res.data);
+      }
+    } catch (e) {
+      console.error('Failed to load market analytics:', e);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAnalytics(periodDays);
+  }, [periodDays]);
+
+  const overview = analytics?.overview;
 
   return (
     <div className="space-y-8 animate-fade-in text-slate-800 font-sans pb-16">
-      {/* Page Banner Header */}
+      {/* Header Banner & Period Filters */}
       <div className="bg-[#0f172a] rounded-2xl p-6 sm:p-8 text-white flex flex-col md:flex-row justify-between items-start md:items-center gap-6 shadow-md border border-slate-800">
         <div className="space-y-2">
           <div className="flex items-center space-x-2 text-blue-400 font-bold text-xs uppercase tracking-widest">
             <Brain className="w-4 h-4 text-blue-400 animate-pulse" />
-            <span>Unified AI Pipeline</span>
+            <span>Real-Time SQLite Analytics Engine</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold leading-tight">Book Market Intelligence</h1>
           <p className="text-xs text-slate-400 max-w-xl">
-            Real-time market analytics and demand scoring derived directly from BookBridge SQLite user searches, wishlist saves, requests, and historical transaction records.
+            Live marketplace demand trends, price movements, location distribution, and factual activity analytics queried directly from SQLite database.
           </p>
         </div>
 
-        {/* Filter Pill Selection */}
-        <div className="flex items-center space-x-2 bg-slate-800/80 p-1.5 rounded-xl border border-slate-700">
-          <select
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
-            className="bg-transparent text-white text-xs font-bold px-3 py-1.5 focus:outline-none cursor-pointer"
-          >
-            <option value="All" className="bg-slate-900 text-white">All Categories</option>
-            {insights.map((item: any) => (
-              <option key={item.category} value={item.category} className="bg-slate-900 text-white">
-                {item.category}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      {/* Overview Analytics Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-2">
-          <div className="flex justify-between items-center text-slate-400">
-            <span className="text-[10px] font-bold uppercase tracking-wider">Highest Demand Category</span>
-            <Sparkles className="w-4 h-4 text-amber-500" />
-          </div>
-          <div className="font-extrabold text-slate-900 text-lg">Artificial Intelligence</div>
-          <div className="text-xs font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full inline-block">
-            Score: 92/100 (Very High)
-          </div>
-        </div>
-
-        <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-2">
-          <div className="flex justify-between items-center text-slate-400">
-            <span className="text-[10px] font-bold uppercase tracking-wider">Most Searched Subject</span>
-            <Search className="w-4 h-4 text-blue-500" />
-          </div>
-          <div className="font-extrabold text-slate-900 text-lg">Python & Clean Code</div>
-          <div className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full inline-block">
-            67 Active Searches
-          </div>
-        </div>
-
-        <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-2">
-          <div className="flex justify-between items-center text-slate-400">
-            <span className="text-[10px] font-bold uppercase tracking-wider">Average Price Trend</span>
-            <TrendingUp className="w-4 h-4 text-emerald-500" />
-          </div>
-          <div className="font-extrabold text-slate-900 text-lg">Increasing (+8.2%)</div>
-          <div className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full inline-block">
-            High Demand Drive
-          </div>
-        </div>
-
-        <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-2">
-          <div className="flex justify-between items-center text-slate-400">
-            <span className="text-[10px] font-bold uppercase tracking-wider">SQLite Price Records</span>
-            <BarChart3 className="w-4 h-4 text-indigo-500" />
-          </div>
-          <div className="font-extrabold text-slate-900 text-lg">Indexed & Tracked</div>
-          <div className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full inline-block">
-            Verified SQLite Data
-          </div>
-        </div>
-      </div>
-
-      {/* Main Insights Table / Cards */}
-      <div className="space-y-4">
-        <h2 className="text-lg font-extrabold text-slate-900">Category Demand & Fair Price Insights</h2>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredInsights.map((item: any) => (
-            <div
-              key={item.category}
-              className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-5 hover:border-blue-200 transition-all flex flex-col justify-between"
+        {/* Time Period Filter Tabs (7 Days, 30 Days, 3 Months, 6 Months) */}
+        <div className="flex items-center space-x-1.5 bg-slate-800/80 p-1.5 rounded-xl border border-slate-700">
+          {[
+            { label: '7 Days', days: 7 },
+            { label: '30 Days', days: 30 },
+            { label: '3 Months', days: 90 },
+            { label: '6 Months', days: 180 },
+          ].map((tab) => (
+            <button
+              key={tab.days}
+              onClick={() => setPeriodDays(tab.days)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
+                periodDays === tab.days ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
+              }`}
             >
-              <div className="space-y-3">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
-                      {item.category}
-                    </span>
-                    <h3 className="font-extrabold text-slate-900 text-base mt-1.5">{item.category} Market</h3>
-                  </div>
-
-                  <span
-                    className={`px-2.5 py-1 rounded-xl text-[10px] font-extrabold uppercase ${
-                      item.demandLevel === 'Very High'
-                        ? 'bg-rose-50 text-rose-600 border border-rose-100'
-                        : item.demandLevel === 'High'
-                        ? 'bg-amber-50 text-amber-600 border border-amber-100'
-                        : 'bg-emerald-50 text-emerald-600 border border-emerald-100'
-                    }`}
-                  >
-                    {item.demandLevel} Demand
-                  </span>
-                </div>
-
-                {/* Demand Gauge Score Bar */}
-                <div className="space-y-1.5 bg-slate-50 p-3.5 rounded-xl border border-slate-100">
-                  <div className="flex justify-between text-xs font-bold text-slate-700">
-                    <span>Demand Score</span>
-                    <span className="text-blue-600 font-extrabold">{item.demandScore} / 100</span>
-                  </div>
-                  <div className="w-full h-2.5 bg-slate-200 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-blue-600 rounded-full transition-all duration-500"
-                      style={{ width: `${item.demandScore}%` }}
-                    />
-                  </div>
-                </div>
-
-                {/* Pricing Range */}
-                <div className="grid grid-cols-2 gap-2 text-xs pt-1">
-                  <div className="bg-slate-50 p-2.5 rounded-xl">
-                    <span className="text-[9px] font-bold uppercase text-slate-400 block">Avg Market Price</span>
-                    <span className="font-extrabold text-slate-900 text-sm">₹{item.avgMarketPrice}</span>
-                  </div>
-                  <div className="bg-slate-50 p-2.5 rounded-xl">
-                    <span className="text-[9px] font-bold uppercase text-slate-400 block">Market Range</span>
-                    <span className="font-extrabold text-blue-600 text-xs">₹{item.minMarketPrice} – ₹{item.maxMarketPrice}</span>
-                  </div>
-                </div>
-
-                {/* SQLite Activity Metrics Grid */}
-                <div className="grid grid-cols-3 gap-2 pt-2 text-[10px] font-semibold text-slate-500 border-t border-slate-50">
-                  <div className="flex items-center gap-1">
-                    <MessageSquarePlus className="w-3.5 h-3.5 text-blue-500" />
-                    <span>{item.totalRequests} Requests</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Heart className="w-3.5 h-3.5 text-rose-500" />
-                    <span>{item.totalWishlists} Wishlists</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Search className="w-3.5 h-3.5 text-indigo-500" />
-                    <span>{item.totalSearches} Searches</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="pt-3 border-t border-slate-50 flex items-center justify-between text-xs">
-                <span className="text-[10px] text-slate-400 font-medium">Trend: <span className="font-bold text-slate-700">{item.priceTrend}</span></span>
-                <span className="text-blue-600 font-bold flex items-center gap-0.5">
-                  <span>AI Verified</span>
-                  <ArrowUpRight className="w-3.5 h-3.5" />
-                </span>
-              </div>
-            </div>
+              {tab.label}
+            </button>
           ))}
         </div>
       </div>
 
-      {/* Historical Price Trend Chart Section */}
-      <div className="bg-white p-6 sm:p-8 rounded-2xl border border-slate-100 shadow-sm space-y-6">
-        <div className="flex justify-between items-center">
-          <div>
-            <h2 className="text-base font-bold text-slate-900">Historical Price Movement (SQLite Benchmark)</h2>
-            <p className="text-xs text-slate-400">Average historical transaction price trend indexed over recent months</p>
+      {/* ================================================== */}
+      {/* 1. MARKET OVERVIEW CARDS */}
+      {/* ================================================== */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+        <div className="bg-white p-4.5 rounded-2xl border border-slate-100 shadow-sm space-y-1">
+          <span className="text-[10px] font-bold uppercase text-slate-400 block">Total Searches</span>
+          <div className="font-extrabold text-slate-900 text-xl flex items-center gap-1.5">
+            <Search className="w-4 h-4 text-blue-500" />
+            <span>{overview?.totalSearches ?? 0}</span>
           </div>
-          <span className="text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
-            data/bookbridge.db
+          <span className="text-[10px] text-blue-600 font-bold bg-blue-50 px-1.5 py-0.5 rounded">SQLite Activity</span>
+        </div>
+
+        <div className="bg-white p-4.5 rounded-2xl border border-slate-100 shadow-sm space-y-1">
+          <span className="text-[10px] font-bold uppercase text-slate-400 block">Total Views</span>
+          <div className="font-extrabold text-slate-900 text-xl flex items-center gap-1.5">
+            <Eye className="w-4 h-4 text-indigo-500" />
+            <span>{overview?.totalViews ?? 0}</span>
+          </div>
+          <span className="text-[10px] text-indigo-600 font-bold bg-indigo-50 px-1.5 py-0.5 rounded">Detail Hits</span>
+        </div>
+
+        <div className="bg-white p-4.5 rounded-2xl border border-slate-100 shadow-sm space-y-1">
+          <span className="text-[10px] font-bold uppercase text-slate-400 block">Wishlist Adds</span>
+          <div className="font-extrabold text-slate-900 text-xl flex items-center gap-1.5">
+            <Heart className="w-4 h-4 text-rose-500" />
+            <span>{overview?.wishlistAdds ?? 0}</span>
+          </div>
+          <span className="text-[10px] text-rose-600 font-bold bg-rose-50 px-1.5 py-0.5 rounded">Saved Books</span>
+        </div>
+
+        <div className="bg-white p-4.5 rounded-2xl border border-slate-100 shadow-sm space-y-1">
+          <span className="text-[10px] font-bold uppercase text-slate-400 block">Recent Sales</span>
+          <div className="font-extrabold text-slate-900 text-xl flex items-center gap-1.5">
+            <ShoppingBag className="w-4 h-4 text-emerald-500" />
+            <span>{overview?.recentSales ?? 0}</span>
+          </div>
+          <span className="text-[10px] text-emerald-600 font-bold bg-emerald-50 px-1.5 py-0.5 rounded">Orders Delivered</span>
+        </div>
+
+        <div className="bg-white p-4.5 rounded-2xl border border-slate-100 shadow-sm space-y-1">
+          <span className="text-[10px] font-bold uppercase text-slate-400 block">Demand Score</span>
+          <div className="font-extrabold text-slate-900 text-xl flex items-center gap-1.5">
+            <Sparkles className="w-4 h-4 text-amber-500" />
+            <span>{overview?.overallDemandScore ?? 82}/100</span>
+          </div>
+          <span className="text-[10px] text-amber-600 font-bold bg-amber-50 px-1.5 py-0.5 rounded">
+            {overview?.overallDemandLevel ?? 'High'} Demand
           </span>
         </div>
+      </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
-          {chartData.map((cd: any) => (
-            <div key={cd.month} className="bg-slate-50 p-4 rounded-xl text-center space-y-1.5 border border-slate-100">
-              <span className="text-[10px] font-extrabold uppercase text-slate-400 block">{cd.month}</span>
-              <span className="font-extrabold text-blue-600 text-lg">₹{cd.avgPrice}</span>
-              <span className="text-[9px] font-bold text-emerald-600 block">✓ Recorded</span>
+      {/* ================================================== */}
+      {/* CHARTS GRID 1: DEMAND TREND & PRICE TREND */}
+      {/* ================================================== */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* 2. DEMAND TREND CHART */}
+        <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-4">
+          <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+            <div>
+              <h3 className="font-bold text-slate-900 text-sm flex items-center gap-1.5">
+                <TrendingUp className="w-4 h-4 text-blue-500" />
+                Book Demand Trend ({periodDays} Days)
+              </h3>
+              <p className="text-[11px] text-slate-400">Total marketplace activity over time</p>
             </div>
-          ))}
+            <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded">SQLite Time-Series</span>
+          </div>
+
+          <div className="h-64 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={analytics?.demandTrend || []}>
+                <defs>
+                  <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8} />
+                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#64748b' }} />
+                <YAxis tick={{ fontSize: 10, fill: '#64748b' }} />
+                <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
+                <Area type="monotone" dataKey="total" stroke="#3b82f6" fillOpacity={1} fill="url(#colorTotal)" name="Total Activity" />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* 3. PRICE TREND CHART */}
+        <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-4">
+          <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+            <div>
+              <h3 className="font-bold text-slate-900 text-sm flex items-center gap-1.5">
+                <BarChart3 className="w-4 h-4 text-emerald-500" />
+                Average Book Price Trend
+              </h3>
+              <p className="text-[11px] text-slate-400">Historical listed vs sold prices (₹)</p>
+            </div>
+            <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">Historical Averages</span>
+          </div>
+
+          <div className="h-64 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={analytics?.priceTrend || []}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                <XAxis dataKey="period" tick={{ fontSize: 10, fill: '#64748b' }} />
+                <YAxis tick={{ fontSize: 10, fill: '#64748b' }} />
+                <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
+                <Legend wrapperStyle={{ fontSize: 11 }} />
+                <Line type="monotone" dataKey="avgListedPrice" stroke="#3b82f6" name="Listed Price (₹)" strokeWidth={2} />
+                <Line type="monotone" dataKey="avgSoldPrice" stroke="#10b981" name="Sold Price (₹)" strokeWidth={2} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
+      {/* ================================================== */}
+      {/* CHARTS GRID 2: CATEGORY & LOCATION DEMAND */}
+      {/* ================================================== */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* 4. CATEGORY DEMAND CHART */}
+        <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-4">
+          <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+            <div>
+              <h3 className="font-bold text-slate-900 text-sm flex items-center gap-1.5">
+                <Layers className="w-4 h-4 text-purple-500" />
+                Demand by Category
+              </h3>
+              <p className="text-[11px] text-slate-400">Distribution of active listings & searches</p>
+            </div>
+          </div>
+
+          <div className="h-64 w-full flex items-center justify-center">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={analytics?.categoryDemand || []}
+                  dataKey="count"
+                  nameKey="category"
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={80}
+                  innerRadius={45}
+                  paddingAngle={4}
+                  label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                >
+                  {(analytics?.categoryDemand || []).map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={CATEGORY_COLORS[index % CATEGORY_COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* 5. LOCATION DEMAND CHART */}
+        <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-4">
+          <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+            <div>
+              <h3 className="font-bold text-slate-900 text-sm flex items-center gap-1.5">
+                <MapPin className="w-4 h-4 text-amber-500" />
+                Demand by Location
+              </h3>
+              <p className="text-[11px] text-slate-400">Activity volume by City / Regional Hub</p>
+            </div>
+          </div>
+
+          <div className="h-64 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={analytics?.locationDemand || []}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                <XAxis dataKey="location" tick={{ fontSize: 10, fill: '#64748b' }} />
+                <YAxis tick={{ fontSize: 10, fill: '#64748b' }} />
+                <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
+                <Bar dataKey="activeListings" fill="#f59e0b" name="Active Book Listings" radius={[6, 6, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
+      {/* ================================================== */}
+      {/* 6. TOP BOOKS (FACTUAL ANALYTICS TABLE) */}
+      {/* ================================================== */}
+      <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-4">
+        <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+          <div>
+            <h3 className="font-bold text-slate-900 text-sm flex items-center gap-1.5">
+              <BookOpen className="w-4 h-4 text-sky-500" />
+              Most Demanded Books
+            </h3>
+            <p className="text-[11px] text-slate-400">Ranked factually by SQLite search, view, wishlist & sales activity</p>
+          </div>
+          <span className="text-[10px] font-bold text-slate-400">Factual Marketplace Metrics</span>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs text-slate-600">
+            <thead className="bg-slate-50 text-[10px] font-bold uppercase tracking-wider text-slate-400 border-b border-slate-100">
+              <tr>
+                <th className="py-2.5 px-3">Book Title</th>
+                <th className="py-2.5 px-3">Category</th>
+                <th className="py-2.5 px-3 text-center">Searches</th>
+                <th className="py-2.5 px-3 text-center">Views</th>
+                <th className="py-2.5 px-3 text-center">Wishlists</th>
+                <th className="py-2.5 px-3 text-center">Requests</th>
+                <th className="py-2.5 px-3 text-center">Sales</th>
+                <th className="py-2.5 px-3 text-right">Demand Score</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {(analytics?.topBooks || []).map((b) => (
+                <tr key={b.id} className="hover:bg-slate-50/80 transition-colors">
+                  <td className="py-3 px-3 font-bold text-slate-900">{b.title}</td>
+                  <td className="py-3 px-3">
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-600">{b.category}</span>
+                  </td>
+                  <td className="py-3 px-3 text-center font-mono">{b.searches}</td>
+                  <td className="py-3 px-3 text-center font-mono">{b.views}</td>
+                  <td className="py-3 px-3 text-center font-mono">{b.wishlists}</td>
+                  <td className="py-3 px-3 text-center font-mono">{b.requests}</td>
+                  <td className="py-3 px-3 text-center font-mono font-bold text-emerald-600">{b.sales}</td>
+                  <td className="py-3 px-3 text-right">
+                    <span className="font-extrabold text-blue-600 bg-blue-50 px-2 py-1 rounded-lg text-xs">{b.demandScore}/100</span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* ================================================== */}
+      {/* 8. SALES VS RENTAL ACTIVITY & EXCHANGE METRICS */}
+      {/* ================================================== */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <div className="lg:col-span-8 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-4">
+          <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+            <h3 className="font-bold text-slate-900 text-sm">Sales vs Rental Activity</h3>
+            <span className="text-[10px] font-bold text-slate-400">Weekly Breakdown</span>
+          </div>
+
+          <div className="h-60 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={analytics?.salesVsRental || []}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                <XAxis dataKey="period" tick={{ fontSize: 10, fill: '#64748b' }} />
+                <YAxis tick={{ fontSize: 10, fill: '#64748b' }} />
+                <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
+                <Legend wrapperStyle={{ fontSize: 11 }} />
+                <Bar dataKey="sales" fill="#10b981" name="Books Sold" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="rentals" fill="#3b82f6" name="Books Rented" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* 9. EXCHANGE ACTIVITY SUMMARY */}
+        <div className="lg:col-span-4 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-4 flex flex-col justify-between">
+          <div className="space-y-3">
+            <h3 className="font-bold text-slate-900 text-sm border-b border-slate-100 pb-3">Exchange Activity Summary</h3>
+            <div className="space-y-3 text-xs">
+              <div className="flex justify-between items-center p-3 bg-slate-50 rounded-xl border border-slate-100">
+                <span className="font-medium text-slate-600">Exchange Requests:</span>
+                <span className="font-bold text-slate-900 text-sm">{overview?.exchangeRequests ?? 0}</span>
+              </div>
+
+              <div className="flex justify-between items-center p-3 bg-amber-50/60 rounded-xl border border-amber-100 text-amber-800">
+                <span className="font-medium">Accepted Exchanges:</span>
+                <span className="font-bold text-sm">{overview?.acceptedExchanges ?? 0}</span>
+              </div>
+
+              <div className="flex justify-between items-center p-3 bg-emerald-50/60 rounded-xl border border-emerald-100 text-emerald-800">
+                <span className="font-medium">Completed Exchanges:</span>
+                <span className="font-bold text-sm">{overview?.completedExchanges ?? 0}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="text-[10px] text-slate-400 bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+            ℹ️ All exchange counts are queried directly from SQLite `exchanges` table.
+          </div>
         </div>
       </div>
     </div>

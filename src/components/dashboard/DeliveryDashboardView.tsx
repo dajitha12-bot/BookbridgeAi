@@ -201,7 +201,12 @@ export default function DeliveryDashboardView({
 
         {/* Workflow Action Buttons */}
         <div className="bg-blue-50/60 p-4 rounded-xl border border-blue-100 space-y-3">
-          <span className="text-xs font-bold text-blue-900 uppercase tracking-wider block">Update Outbound Delivery Progress</span>
+          <div className="flex justify-between items-center">
+            <span className="text-xs font-bold text-blue-900 uppercase tracking-wider block">Update Outbound Delivery Progress</span>
+            <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+              Staff Earnings: +₹20.00 / Leg
+            </span>
+          </div>
           <div className="flex flex-wrap gap-2">
             <button
               onClick={() => handleStatusUpdate(activeDelivery?.id || 'del-1', 'REACHED_SELLER')}
@@ -214,6 +219,12 @@ export default function DeliveryDashboardView({
               className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg transition-colors cursor-pointer shadow-xs"
             >
               📦 Book Picked Up
+            </button>
+            <button
+              onClick={() => handleStatusUpdate(activeDelivery?.id || 'del-1', 'BOOK_RECEIVED')}
+              className="px-3.5 py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-lg transition-colors cursor-pointer shadow-xs flex items-center gap-1"
+            >
+              📬 Book Received
             </button>
             <button
               onClick={() => handleStatusUpdate(activeDelivery?.id || 'del-1', 'IN_TRANSIT')}
