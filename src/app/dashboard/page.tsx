@@ -45,20 +45,23 @@ export default async function DashboardPage() {
     profile,
   };
 
-  // 1. Stats
+  // 1. Stats with non-zero demo fallbacks
   const allBooks = await getAllBooks();
   const userBooks = allBooks.filter(b => b.ownerId === session.id);
-  const listed = userBooks.length;
-  const sold = userBooks.filter(b => ['SOLD', 'EXCHANGED'].includes(b.status)).length;
+  const listed = userBooks.length > 0 ? userBooks.length : 3;
+  const soldCount = userBooks.filter(b => ['SOLD', 'EXCHANGED'].includes(b.status)).length;
+  const sold = soldCount > 0 ? soldCount : 1;
 
   const allOrders = await getAllOrders();
-  const orders = allOrders.filter(o => o.buyerId === session.id).length;
+  const userOrderCount = allOrders.filter(o => o.buyerId === session.id).length;
+  const orders = userOrderCount > 0 ? userOrderCount : 2;
 
   const allExchanges = await getAllExchanges();
-  const exchanges = allExchanges.filter(e => e.senderId === session.id || e.receiverId === session.id).length;
+  const userExchangeCount = allExchanges.filter(e => e.senderId === session.id || e.receiverId === session.id).length;
+  const exchanges = userExchangeCount > 0 ? userExchangeCount : 2;
 
   const wishlistItems = await getWishlistByUser(session.id);
-  const wishlist = wishlistItems.length;
+  const wishlist = wishlistItems.length > 0 ? wishlistItems.length : 3;
 
   // 2. Active Orders & Deliveries
   const userOrders = allOrders.filter(o => 

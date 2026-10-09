@@ -558,11 +558,13 @@ export function initDatabase() {
  */
 function seedInitialData() {
   const userCount = db.prepare('SELECT COUNT(*) as count FROM users').get() as { count: number };
-  if (userCount.count > 0) {
-    return; // Already seeded
+  const bookCount = db.prepare('SELECT COUNT(*) as count FROM books').get() as { count: number };
+
+  if (userCount.count > 0 && bookCount.count >= 12) {
+    return; // Already fully seeded
   }
 
-  console.log('Seeding SQLite database bookbridge.db with initial demonstration records...');
+  console.log('Seeding SQLite database bookbridge.db with rich demonstration records...');
 
   const userPwdHash = hashPassword('user123');
   const staffPwdHash = hashPassword('staff123');
@@ -570,12 +572,12 @@ function seedInitialData() {
 
   // Insert Users
   const insertUser = db.prepare(`
-    INSERT INTO users (id, email, name, phone, password_hash, role, status)
+    INSERT OR REPLACE INTO users (id, email, name, phone, password_hash, role, status)
     VALUES (?, ?, ?, ?, ?, ?, ?)
   `);
 
   const insertProfile = db.prepare(`
-    INSERT INTO profiles (user_id, city, area, address, pincode, latitude, longitude)
+    INSERT OR REPLACE INTO profiles (user_id, city, area, address, pincode, latitude, longitude)
     VALUES (?, ?, ?, ?, ?, ?, ?)
   `);
 
@@ -597,7 +599,7 @@ function seedInitialData() {
 
   // Insert Delivery Staff Details
   const insertStaff = db.prepare(`
-    INSERT INTO delivery_staff (id, user_id, name, phone, city, area, pincode, service_area, availability, active_deliveries)
+    INSERT OR REPLACE INTO delivery_staff (id, user_id, name, phone, city, area, pincode, service_area, availability, active_deliveries)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
@@ -606,7 +608,7 @@ function seedInitialData() {
 
   // Insert Books
   const insertBook = db.prepare(`
-    INSERT INTO books (
+    INSERT OR REPLACE INTO books (
       id, owner_id, title, author, category, subject, isbn, edition, publication_year, original_price, expected_price, rental_price_per_day, security_deposit, condition, description, image_url, city, area, pincode, delivery_available, exchange_available, donation_available, rental_available, status, purchase_date
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
@@ -621,7 +623,9 @@ function seedInitialData() {
     { id: 'bk-7', owner_id: 'usr-user3', title: 'Operating System Concepts', author: 'Abraham Silberschatz', category: 'Operating Systems', subject: 'OS Kernels & Memory', isbn: '9781118063330', edition: 9, year: 2018, origPrice: 2100, expPrice: 950, rentDay: 25, secDep: 500, cond: 'GOOD', desc: 'Dinosaurs book covering process scheduling and memory management.', img: 'https://covers.openlibrary.org/b/isbn/9781118063330-L.jpg', city: 'Chennai', area: 'Velachery', pin: '600042', del: 1, exc: 1, don: 0, rent: 1, status: 'AVAILABLE', date: '2022-09-18' },
     { id: 'bk-8', owner_id: 'usr-user1', title: 'Introduction to Algorithms (CLRS)', author: 'Thomas H. Cormen', category: 'Programming', subject: 'Data Structures & Algorithms', isbn: '9780262033848', edition: 3, year: 2009, origPrice: 3000, expPrice: 0, rentDay: 0, secDep: 0, cond: 'FAIR', desc: 'Heavy highlights, loose binding. Giving it away for free to anyone who needs it.', img: 'https://covers.openlibrary.org/b/isbn/9780262033848-L.jpg', city: 'Chennai', area: 'Adyar', pin: '600020', del: 0, exc: 0, don: 1, rent: 0, status: 'AVAILABLE', date: '2021-06-10' },
     { id: 'bk-9', owner_id: 'usr-user', title: 'The C++ Programming Language', author: 'Bjarne Stroustrup', category: 'Programming', subject: 'C++ Systems', isbn: '9780321563842', edition: 4, year: 2013, origPrice: 2600, expPrice: 0, rentDay: 0, secDep: 0, cond: 'GOOD', desc: 'Classic Stroustrup reference manual. Donating for free.', img: 'https://covers.openlibrary.org/b/isbn/9780321563842-L.jpg', city: 'Chennai', area: 'Mylapore', pin: '600004', del: 0, exc: 0, don: 1, rent: 0, status: 'AVAILABLE', date: '2022-04-12' },
-    { id: 'bk-10', owner_id: 'usr-user4', title: 'Higher Engineering Mathematics', author: 'B.S. Grewal', category: 'Mathematics', subject: 'Engineering Math', isbn: '9788174091955', edition: 44, year: 2021, origPrice: 1400, expPrice: 650, rentDay: 20, secDep: 350, cond: 'VERY_GOOD', desc: 'Standard engineering mathematics text book.', img: 'https://covers.openlibrary.org/b/isbn/9788174091955-L.jpg', city: 'Madurai', area: 'KK Nagar', pin: '625020', del: 1, exc: 1, don: 0, rent: 1, status: 'AVAILABLE', date: '2023-07-22' }
+    { id: 'bk-10', owner_id: 'usr-user4', title: 'Higher Engineering Mathematics', author: 'B.S. Grewal', category: 'Mathematics', subject: 'Engineering Math', isbn: '9788174091955', edition: 44, year: 2021, origPrice: 1400, expPrice: 650, rentDay: 20, secDep: 350, cond: 'VERY_GOOD', desc: 'Standard engineering mathematics text book.', img: 'https://covers.openlibrary.org/b/isbn/9788174091955-L.jpg', city: 'Madurai', area: 'KK Nagar', pin: '625020', del: 1, exc: 1, don: 0, rent: 1, status: 'AVAILABLE', date: '2023-07-22' },
+    { id: 'bk-11', owner_id: 'usr-user1', title: 'Hands-On Machine Learning with Scikit-Learn', author: 'Aurélien Géron', category: 'Artificial Intelligence', subject: 'Machine Learning', isbn: '9781492032649', edition: 2, year: 2019, origPrice: 2700, expPrice: 1400, rentDay: 40, secDep: 800, cond: 'LIKE_NEW', desc: 'Sold copy. Comprehensive machine learning handbook.', img: 'https://covers.openlibrary.org/b/isbn/9781492032649-L.jpg', city: 'Chennai', area: 'Adyar', pin: '600020', del: 1, exc: 1, don: 0, rent: 1, status: 'SOLD', date: '2023-08-10' },
+    { id: 'bk-12', owner_id: 'usr-user', title: 'Computer Networking: A Top-Down Approach', author: 'James Kurose & Keith Ross', category: 'Programming', subject: 'Computer Networks', isbn: '9780133594140', edition: 7, year: 2016, origPrice: 2200, expPrice: 1100, rentDay: 30, secDep: 600, cond: 'VERY_GOOD', desc: 'Sold copy. Standard networking textbook.', img: 'https://covers.openlibrary.org/b/isbn/9780133594140-L.jpg', city: 'Chennai', area: 'Mylapore', pin: '600004', del: 1, exc: 1, don: 0, rent: 1, status: 'SOLD', date: '2023-09-01' }
   ];
 
   for (const b of booksToSeed) {
@@ -634,16 +638,17 @@ function seedInitialData() {
 
   // Insert Orders & Order Items
   const insertOrder = db.prepare(`
-    INSERT INTO orders (id, buyer_id, seller_id, book_id, amount, delivery_charge, security_deposit, total_amount, delivery_method, payment_status, order_status, pickup_location, delivery_address)
+    INSERT OR REPLACE INTO orders (id, buyer_id, seller_id, book_id, amount, delivery_charge, security_deposit, total_amount, delivery_method, payment_status, order_status, pickup_location, delivery_address)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
   insertOrder.run('ord-1', 'usr-user1', 'usr-user3', 'bk-3', 1200, 30, 0, 1230, 'DELIVERY', 'PAID', 'IN_TRANSIT', null, '10, Kasturiba Nagar, Adyar, Chennai');
-  insertOrder.run('ord-2', 'usr-user', 'usr-user1', 'bk-1', 850, 0, 0, 850, 'PICKUP', 'PAID', 'DELIVERED', 'Adyar Bus Stand, Chennai', null);
+  insertOrder.run('ord-2', 'usr-user', 'usr-user1', 'bk-11', 1400, 30, 0, 1430, 'DELIVERY', 'PAID', 'DELIVERED', null, '14, Luz Church Road, Mylapore, Chennai');
+  insertOrder.run('ord-3', 'usr-user1', 'usr-user', 'bk-12', 1100, 0, 0, 1100, 'PICKUP', 'PAID', 'DELIVERED', 'Mylapore Railway Station', null);
 
   // Insert Rentals
   const insertRental = db.prepare(`
-    INSERT INTO rentals (id, book_id, renter_id, owner_id, duration_days, price_per_day, rental_fee, security_deposit, total_amount, handover_method, delivery_address, status, payment_status, start_date, end_date)
+    INSERT OR REPLACE INTO rentals (id, book_id, renter_id, owner_id, duration_days, price_per_day, rental_fee, security_deposit, total_amount, handover_method, delivery_address, status, payment_status, start_date, end_date)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
@@ -652,16 +657,29 @@ function seedInitialData() {
 
   // Insert Exchanges
   const insertExchange = db.prepare(`
-    INSERT INTO exchanges (id, sender_id, receiver_id, offered_book_id, requested_book_id, handover_method, status)
+    INSERT OR REPLACE INTO exchanges (id, sender_id, receiver_id, offered_book_id, requested_book_id, handover_method, status)
     VALUES (?, ?, ?, ?, ?, ?, ?)
   `);
 
   insertExchange.run('exc-1', 'usr-user', 'usr-user1', 'bk-5', 'bk-1', 'DELIVERY', 'PENDING');
   insertExchange.run('exc-2', 'usr-user1', 'usr-user3', 'bk-1', 'bk-4', 'PICKUP', 'ACCEPTED');
 
+  // Insert Wishlist
+  const insertWishlist = db.prepare(`
+    INSERT OR REPLACE INTO wishlist (id, user_id, book_id)
+    VALUES (?, ?, ?)
+  `);
+
+  insertWishlist.run('w-1', 'usr-user1', 'bk-2');
+  insertWishlist.run('w-2', 'usr-user1', 'bk-3');
+  insertWishlist.run('w-3', 'usr-user1', 'bk-6');
+  insertWishlist.run('w-4', 'usr-user', 'bk-1');
+  insertWishlist.run('w-5', 'usr-user', 'bk-4');
+  insertWishlist.run('w-6', 'usr-user', 'bk-7');
+
   // Insert Donations
   const insertDonation = db.prepare(`
-    INSERT INTO donations (id, book_id, donor_id, recipient_id, institution_name, reg_number, purpose, quantity_needed, city, contact_phone, status)
+    INSERT OR REPLACE INTO donations (id, book_id, donor_id, recipient_id, institution_name, reg_number, purpose, quantity_needed, city, contact_phone, status)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
@@ -670,7 +688,7 @@ function seedInitialData() {
 
   // Insert Deliveries
   const insertDelivery = db.prepare(`
-    INSERT INTO deliveries (id, order_id, rental_id, exchange_id, staff_id, delivery_type, pickup_address, delivery_address, status, distance_km, delivery_charge)
+    INSERT OR REPLACE INTO deliveries (id, order_id, rental_id, exchange_id, staff_id, delivery_type, pickup_address, delivery_address, status, distance_km, delivery_charge)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
@@ -682,12 +700,12 @@ function seedInitialData() {
 
   // Insert Buyer-Seller Demo Chat Conversation & Messages
   const insertChatConv = db.prepare(`
-    INSERT INTO chat_conversations (id, book_id, buyer_id, seller_id, created_at, updated_at)
+    INSERT OR REPLACE INTO chat_conversations (id, book_id, buyer_id, seller_id, created_at, updated_at)
     VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
   `);
 
   const insertChatMessage = db.prepare(`
-    INSERT INTO chat_messages (id, conversation_id, sender_id, message, created_at)
+    INSERT OR REPLACE INTO chat_messages (id, conversation_id, sender_id, message, created_at)
     VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
   `);
 
@@ -698,7 +716,7 @@ function seedInitialData() {
 
   // Insert Payments
   const insertPayment = db.prepare(`
-    INSERT INTO payments (id, order_id, rental_id, user_id, amount, delivery_charge, security_deposit, total_amount, method, status, transaction_id, refund_status)
+    INSERT OR REPLACE INTO payments (id, order_id, rental_id, user_id, amount, delivery_charge, security_deposit, total_amount, method, status, transaction_id, refund_status)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
@@ -707,7 +725,7 @@ function seedInitialData() {
 
   // Insert Notifications
   const insertNotification = db.prepare(`
-    INSERT INTO notifications (id, user_id, title, message, is_read, type)
+    INSERT OR REPLACE INTO notifications (id, user_id, title, message, is_read, type)
     VALUES (?, ?, ?, ?, ?, ?)
   `);
 
@@ -717,7 +735,7 @@ function seedInitialData() {
 
   // Insert Book Requests
   const insertRequest = db.prepare(`
-    INSERT INTO book_requests (id, user_id, requester_name, title, author, category, city, urgency, status)
+    INSERT OR REPLACE INTO book_requests (id, user_id, requester_name, title, author, category, city, urgency, status)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
@@ -725,19 +743,9 @@ function seedInitialData() {
   insertRequest.run('req-2', 'usr-user1', 'Ajitha', 'Artificial Intelligence: A Modern Approach (4th Edition)', 'Stuart Russell & Peter Norvig', 'Artificial Intelligence', 'Chennai', 'MEDIUM', 'OPEN');
   insertRequest.run('req-3', 'usr-user', 'Standard User', 'Data Structures & Algorithms in Java', 'Robert Lafore', 'Programming', 'Chennai', 'HIGH', 'OPEN');
 
-  // Insert Wishlist
-  const insertWishlist = db.prepare(`
-    INSERT INTO wishlist (id, user_id, book_id)
-    VALUES (?, ?, ?)
-  `);
-
-  insertWishlist.run('w-1', 'usr-user1', 'bk-2');
-  insertWishlist.run('w-2', 'usr-user1', 'bk-3');
-  insertWishlist.run('w-3', 'usr-user1', 'bk-6');
-
   // Insert Price History
   const insertPriceHistory = db.prepare(`
-    INSERT INTO price_history (id, book_id, title, category, original_price, listed_price, sold_price, condition, edition, location)
+    INSERT OR REPLACE INTO price_history (id, book_id, title, category, original_price, listed_price, sold_price, condition, edition, location)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
@@ -749,7 +757,7 @@ function seedInitialData() {
 
   // Insert Market Data Summary
   const insertMarketData = db.prepare(`
-    INSERT INTO market_data (id, category, avg_market_price, min_market_price, max_market_price, demand_score, price_trend)
+    INSERT OR REPLACE INTO market_data (id, category, avg_market_price, min_market_price, max_market_price, demand_score, price_trend)
     VALUES (?, ?, ?, ?, ?, ?, ?)
   `);
 
@@ -760,13 +768,13 @@ function seedInitialData() {
   insertMarketData.run('md-5', 'Mathematics', 650, 300, 1200, 58, 'STABLE');
 
   // Insert Activity Logs (Search, Views, Rental Activity)
-  const insertSearch = db.prepare(`INSERT INTO search_activity (id, user_id, query, category) VALUES (?, ?, ?, ?)`);
+  const insertSearch = db.prepare(`INSERT OR REPLACE INTO search_activity (id, user_id, query, category) VALUES (?, ?, ?, ?)`);
   insertSearch.run('s-1', 'usr-user1', 'python crash course', 'Programming');
   insertSearch.run('s-2', 'usr-user1', 'clean code', 'Programming');
   insertSearch.run('s-3', 'usr-user', 'artificial intelligence', 'Artificial Intelligence');
   insertSearch.run('s-4', 'usr-user3', 'database silberschatz', 'Database');
 
-  const insertView = db.prepare(`INSERT INTO book_views (id, user_id, book_id) VALUES (?, ?, ?)`);
+  const insertView = db.prepare(`INSERT OR REPLACE INTO book_views (id, user_id, book_id) VALUES (?, ?, ?)`);
   insertView.run('v-1', 'usr-user1', 'bk-2');
   insertView.run('v-2', 'usr-user1', 'bk-3');
   insertView.run('v-3', 'usr-user', 'bk-1');
