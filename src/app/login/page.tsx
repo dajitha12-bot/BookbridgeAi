@@ -10,14 +10,8 @@ function LoginFormContent() {
   const searchParams = useSearchParams();
   const targetRole = searchParams.get('role') || 'user';
   
-  const defaultEmail = targetRole === 'admin' 
-    ? 'admin@bookbridge.com' 
-    : targetRole === 'staff' 
-    ? 'dhinesh@delivery.com' 
-    : 'ajitha@gmail.com';
-
-  const [email, setEmail] = useState(defaultEmail);
-  const [password, setPassword] = useState('password123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -162,73 +156,6 @@ function LoginFormContent() {
               {!isPending && <ArrowRight className="w-4 h-4" />}
             </button>
           </form>
-
-          {/* Quick Clickable Demo Accounts */}
-          <div className="bg-blue-50/50 border border-blue-100 p-4 rounded-lg space-y-2.5">
-            <h4 className="text-[10px] font-bold text-blue-600 uppercase tracking-wider">Click Demo Account to Autofill:</h4>
-            <div className="flex flex-col gap-2 text-xs">
-              {targetRole === 'admin' && (
-                <button
-                  type="button"
-                  onClick={() => handleQuickDemoLogin('admin@bookbridge.com')}
-                  className="text-left px-3 py-2 bg-white border border-blue-200 hover:bg-blue-50 rounded-lg text-slate-700 font-semibold transition-colors flex justify-between items-center cursor-pointer"
-                >
-                  <span><strong>Admin:</strong> admin@bookbridge.com</span>
-                  {email === 'admin@bookbridge.com' && <Check className="w-3.5 h-3.5 text-blue-600" />}
-                </button>
-              )}
-              {targetRole === 'staff' && (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => handleQuickDemoLogin('dhinesh@delivery.com')}
-                    className="text-left px-3 py-2 bg-white border border-blue-200 hover:bg-blue-50 rounded-lg text-slate-700 font-semibold transition-colors flex justify-between items-center cursor-pointer"
-                  >
-                    <span><strong>Staff 1 (Chennai):</strong> dhinesh@delivery.com</span>
-                    {email === 'dhinesh@delivery.com' && <Check className="w-3.5 h-3.5 text-blue-600" />}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleQuickDemoLogin('staff@bookbridge.com')}
-                    className="text-left px-3 py-2 bg-white border border-blue-200 hover:bg-blue-50 rounded-lg text-slate-700 font-semibold transition-colors flex justify-between items-center cursor-pointer"
-                  >
-                    <span><strong>Staff 2 (Demo):</strong> staff@bookbridge.com</span>
-                    {email === 'staff@bookbridge.com' && <Check className="w-3.5 h-3.5 text-blue-600" />}
-                  </button>
-                </>
-              )}
-              {targetRole === 'user' && (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => handleQuickDemoLogin('ajitha@gmail.com')}
-                    className="text-left px-3 py-2 bg-white border border-blue-200 hover:bg-blue-50 rounded-lg text-slate-700 font-semibold transition-colors flex justify-between items-center cursor-pointer"
-                  >
-                    <span><strong>User 1 (Ajitha):</strong> ajitha@gmail.com</span>
-                    {email === 'ajitha@gmail.com' && <Check className="w-3.5 h-3.5 text-blue-600" />}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleQuickDemoLogin('user@bookbridge.com')}
-                    className="text-left px-3 py-2 bg-white border border-blue-200 hover:bg-blue-50 rounded-lg text-slate-700 font-semibold transition-colors flex justify-between items-center cursor-pointer"
-                  >
-                    <span><strong>User 2 (Demo):</strong> user@bookbridge.com</span>
-                    {email === 'user@bookbridge.com' && <Check className="w-3.5 h-3.5 text-blue-600" />}
-                  </button>
-                </>
-              )}
-            </div>
-          </div>
-
-          {/* Direct Workspace Bypass Link */}
-          <div className="pt-2 border-t border-slate-100 text-center">
-            <a
-              href={targetUrl}
-              className="inline-flex items-center space-x-1 text-xs font-extrabold text-blue-600 hover:text-blue-700 underline"
-            >
-              <span>Direct Access to Workspace Dashboard →</span>
-            </a>
-          </div>
         </div>
       </div>
     </div>

@@ -50,7 +50,7 @@ export default async function StaffEarningsPage() {
         </span>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-2">
           <div className="flex justify-between items-center text-slate-400">
             <span className="text-[10px] font-bold uppercase tracking-wider">Total Earnings</span>
@@ -58,15 +58,6 @@ export default async function StaffEarningsPage() {
           </div>
           <div className="text-3xl font-extrabold text-emerald-600">₹{totalEarnings}</div>
           <p className="text-[11px] text-slate-400">Accumulated from completed deliveries.</p>
-        </div>
-
-        <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-2">
-          <div className="flex justify-between items-center text-slate-400">
-            <span className="text-[10px] font-bold uppercase tracking-wider">Today's Payout</span>
-            <TrendingUp className="w-4 h-4 text-blue-500" />
-          </div>
-          <div className="text-3xl font-extrabold text-slate-800">₹{totalEarnings > 0 ? 90 : 0}</div>
-          <p className="text-[11px] text-slate-400">Daily calculated commission.</p>
         </div>
 
         <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-2">

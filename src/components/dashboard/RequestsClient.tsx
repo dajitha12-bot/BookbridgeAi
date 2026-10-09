@@ -228,7 +228,7 @@ export default function RequestsClient({
                       
                       <div className="text-xs text-slate-500 space-y-0.5 font-medium">
                         <div>Category: <span className="text-slate-800 font-semibold">{req.category}</span> | Max Budget: <span className="text-slate-800 font-semibold">₹{req.maxPrice}</span></div>
-                        <div>Preferred Condition: <span className="text-slate-800 font-semibold">{req.preferredCondition.replace('_', ' ')}</span> | Location: <span className="text-slate-800 font-semibold">{req.city}</span></div>
+                        <div>Preferred Condition: <span className="text-slate-800 font-semibold">{(req.preferredCondition || req.condition || 'GOOD').replace('_', ' ')}</span> | Location: <span className="text-slate-800 font-semibold">{req.city || 'Chennai'}</span></div>
                       </div>
                     </div>
 
