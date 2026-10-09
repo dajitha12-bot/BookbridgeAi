@@ -24,7 +24,7 @@ export async function lookupBookByIsbn(isbn: string): Promise<ExternalBookMetada
   const cleanIsbn = isbn.replace(/[^0-9X]/gi, '');
   if (!cleanIsbn) return null;
 
-  // 1. Primary Lookup: Open Library REST API
+  // 1. Primary Lookup: Open Library REST API (Free, No Key)
   try {
     const response = await fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${cleanIsbn}&format=json&jscmd=data`, {
       headers: { 'Accept': 'application/json' },
@@ -42,23 +42,48 @@ export async function lookupBookByIsbn(isbn: string): Promise<ExternalBookMetada
         const publishYear = item.publish_date ? parseInt(item.publish_date.match(/\d{4}/)?.[0] || '2020') : 2020;
         const coverUrl = item.cover?.medium || item.cover?.small || undefined;
 
+        if (title) {
+          return {
+            title,
+            author,
+            category: 'Programming',
+            publisher,
+            publishYear,
+            isbn: cleanIsbn,
+            coverUrl,
+            source: 'Open Library API'
+          };
+        }
+      }
+    }
+  } catch (err) {
+    // Open Library request skipped or offline
+  }
+
+  // 2. Secondary Lookup: Google Books REST API (Free, No Key Required for basic lookup)
+  try {
+    const gResponse = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${cleanIsbn}`);
+    if (gResponse.ok) {
+      const gData = await gResponse.json();
+      if (gData.items && gData.items.length > 0) {
+        const info = gData.items[0].volumeInfo;
         return {
-          title,
-          author,
-          category: 'Programming',
-          publisher,
-          publishYear,
+          title: info.title || '',
+          author: info.authors ? info.authors.join(', ') : '',
+          category: info.categories ? info.categories[0] : 'General Books',
+          publisher: info.publisher || '',
+          publishYear: info.publishedDate ? parseInt(info.publishedDate.substring(0, 4)) : 2021,
           isbn: cleanIsbn,
-          coverUrl,
+          coverUrl: info.imageLinks?.thumbnail || info.imageLinks?.smallThumbnail || undefined,
           source: 'Open Library API'
         };
       }
     }
-  } catch (err) {
-    // API request failed or network restricted
+  } catch (gErr) {
+    // Google Books lookup skipped
   }
 
-  // 2. Secondary Lookup: Fallback for regional Indian edition ISBNs (e.g. Pearson 978-9357055048 -> Y. Daniel Liang Java)
+  // 3. Tertiary Fallback for regional Indian edition ISBNs
   if (cleanIsbn.startsWith('97893570') || cleanIsbn.includes('9357055045')) {
     return {
       title: 'Introduction to Java Programming and Data Structures (12th Edition)',
@@ -71,7 +96,7 @@ export async function lookupBookByIsbn(isbn: string): Promise<ExternalBookMetada
     };
   }
 
-  // 3. Tertiary Lookup: SQLite Database Cache
+  // 4. Quaternary Lookup: Local SQLite Database Cache
   try {
     const row = db.prepare('SELECT title, author, category, publication_year, isbn, image_url FROM books WHERE isbn LIKE ? OR isbn LIKE ?').get(`%${cleanIsbn}%`, `%${isbn}%`) as any;
     if (row) {

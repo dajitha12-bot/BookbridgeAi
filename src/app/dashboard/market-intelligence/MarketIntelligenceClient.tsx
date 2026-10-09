@@ -85,24 +85,10 @@ export default function MarketIntelligenceClient({ initialSummary }: MarketIntel
           </p>
         </div>
 
-        {/* Time Period Filter Tabs (7 Days, 30 Days, 3 Months, 6 Months) */}
-        <div className="flex items-center space-x-1.5 bg-slate-800/80 p-1.5 rounded-xl border border-slate-700">
-          {[
-            { label: '7 Days', days: 7 },
-            { label: '30 Days', days: 30 },
-            { label: '3 Months', days: 90 },
-            { label: '6 Months', days: 180 },
-          ].map((tab) => (
-            <button
-              key={tab.days}
-              onClick={() => setPeriodDays(tab.days)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
-                periodDays === tab.days ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
+        {/* Time Period Display (Fixed 30-Day Period as specified) */}
+        <div className="flex items-center space-x-2 bg-blue-900/60 px-4 py-2 rounded-xl border border-blue-500/40 text-xs font-extrabold text-blue-200">
+          <Calendar className="w-4 h-4 text-blue-400" />
+          <span>Last 30 Days Performance</span>
         </div>
       </div>
 

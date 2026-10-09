@@ -27,6 +27,52 @@ export async function processChatbotMessageAction(
     const session = await getSession();
     const userId = session?.id || null;
 
+    // Optional OpenAI API Integration: If OPENAI_API_KEY is configured in .env, use OpenAI LLM
+    if (process.env.OPENAI_API_KEY) {
+      try {
+        const openAiRes = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+          },
+          body: JSON.stringify({
+            model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+            messages: [
+              {
+                role: 'system',
+                content:
+                  'You are BookBridge AI Assistant, an expert advisor for BookBridge Smart Book Circulation & Fair Price Predictor. Help users buy, sell, rent, exchange, estimate fair prices, track orders, and discover books.',
+              },
+              { role: 'user', content: userPrompt },
+            ],
+            temperature: 0.7,
+            max_tokens: 300,
+          }),
+        });
+
+        if (openAiRes.ok) {
+          const aiData = await openAiRes.json();
+          const aiText = aiData.choices?.[0]?.message?.content;
+          if (aiText) {
+            return {
+              success: true,
+              intent: 'OPENAI_LLM',
+              text: aiText,
+              quickButtons: [
+                { label: 'Find Books', actionText: 'Find Python books under ₹400' },
+                { label: 'Fair Price', actionText: 'How much should I sell my DBMS book for?' },
+                { label: 'Check Demand', actionText: 'Is Programming category in high demand?' },
+                { label: 'Track Order', actionText: 'Where is my order?' },
+              ],
+            };
+          }
+        }
+      } catch (openAiErr) {
+        console.warn('OpenAI API call failed, falling back to local intent engine:', openAiErr);
+      }
+    }
+
     const analysis: IntentAnalysisResult = detectIntent(userPrompt);
     const { intent, entities } = analysis;
 
