@@ -193,42 +193,106 @@ export async function getAiChatPricePredictionAction(
   formState?: any
 ) {
   try {
-    const title = formState?.title || userPrompt || 'Used Textbook';
-    const originalPrice = formState?.originalPrice || 1200;
-    const condition = formState?.condition || 'VERY_GOOD';
-    const edition = formState?.edition || 1;
-    const category = formState?.category || 'Programming';
-    const purchaseDate = formState?.purchaseDate || '2023-01-01';
+    let title = formState?.title || '';
+    let author = formState?.author || '';
+    let category = formState?.category || 'Programming';
+    let extractedIsbn = formState?.isbn || '';
+    let originalPrice = formState?.originalPrice || 0;
+    let purchaseDate = formState?.purchaseDate || '2023-06-01';
+    let edition = formState?.edition || 1;
+    let condition = formState?.condition || 'VERY_GOOD';
 
+    // 1. Extract ISBN from prompt via Regex (10 or 13 digits)
+    const isbnMatch = userPrompt.match(/(?:ISBN(?:-1[03])?:?\s*)?(97[89][0-9]{10}|[0-9]{9}[0-9X])/i);
+    if (isbnMatch) {
+      extractedIsbn = isbnMatch[1].replace(/[^0-9X]/gi, '');
+    }
+
+    // 2. Query ISBN database if ISBN was found or provided
+    let metadata: any = null;
+    if (extractedIsbn) {
+      metadata = await lookupBookByIsbn(extractedIsbn);
+      if (metadata) {
+        if (metadata.title) title = metadata.title;
+        if (metadata.author) author = metadata.author;
+        if (metadata.category) category = metadata.category;
+      }
+    }
+
+    // 3. Extract original price from prompt text if not in formState
+    if (!originalPrice) {
+      const priceMatch = userPrompt.match(/(?:rs\.?|₹|price|cost|bought for|original)\s*:?\s*(\d{3,5})/i) || userPrompt.match(/(\d{3,5})\s*(?:rs|rupees|inr)/i);
+      if (priceMatch) {
+        originalPrice = parseFloat(priceMatch[1]);
+      } else {
+        originalPrice = 1200; // Fallback default textbook price
+      }
+    }
+
+    // 4. Extract age / days used from prompt text
+    const daysMatch = userPrompt.match(/(\d+)\s*days?\s*(?:old|used)/i);
+    const monthsMatch = userPrompt.match(/(\d+)\s*months?\s*(?:old|used)/i);
+    const yearMatch = userPrompt.match(/bought in (\d{4})/i) || userPrompt.match(/(\d{4})\s*edition/i);
+
+    if (daysMatch) {
+      const days = parseInt(daysMatch[1]);
+      const date = new Date();
+      date.setDate(date.getDate() - days);
+      purchaseDate = date.toISOString().split('T')[0];
+    } else if (monthsMatch) {
+      const months = parseInt(monthsMatch[1]);
+      const date = new Date();
+      date.setMonth(date.getMonth() - months);
+      purchaseDate = date.toISOString().split('T')[0];
+    } else if (yearMatch) {
+      purchaseDate = `${yearMatch[1]}-01-15`;
+    }
+
+    // Fallback title if none could be resolved
+    if (!title) {
+      if (userPrompt.toLowerCase().includes('java')) title = 'Introduction to Java Programming';
+      else if (userPrompt.toLowerCase().includes('python')) title = 'Python Programming & Data Science';
+      else if (userPrompt.toLowerCase().includes('dbms') || userPrompt.toLowerCase().includes('database')) title = 'Database System Concepts';
+      else title = 'Used Computer Science Textbook';
+    }
+
+    // 5. Visual Analysis if Image Uploaded
     const visualAnalysis = await analyzeBookImage(imagePreview, condition);
+    const detectedCondition = visualAnalysis.detectedCondition;
+
+    // 6. Calculate Fair Resale & Rental Price
     const prediction = await predictFairPrice({
       title,
       category,
       originalPrice,
       purchaseDate,
-      condition: visualAnalysis.detectedCondition,
+      condition: detectedCondition,
       edition,
-      imageUrl: imagePreview,
+      imageUrl: imagePreview || (metadata?.coverUrl || undefined),
     });
 
     return {
       success: true,
       suggestion: {
         title,
-        author: formState?.author || 'Standard Author',
+        author: author || 'Standard Author',
         category,
         subject: category,
+        isbn: extractedIsbn || '9781593279509',
         edition,
-        publicationYear: 2024,
+        publicationYear: 2023,
         originalPrice,
-        condition: visualAnalysis.detectedCondition,
+        condition: detectedCondition,
         suggestedPrice: prediction.suggestedPrice,
-        explanation: `${visualAnalysis.explanation} Suggested Fair Price: ₹${prediction.suggestedPrice} (Min: ₹${prediction.minPrice}, Max: ₹${prediction.maxPrice}). Confidence: ${prediction.confidence}%.`,
-        description: `Quality textbook in ${visualAnalysis.detectedCondition.replace('_', ' ')} condition. Fair price recommended by BookBridge Smart Market AI.`
+        suggestedRentalPrice5Days: prediction.suggestedRentalPrice5Days,
+        minPrice: prediction.minPrice,
+        maxPrice: prediction.maxPrice,
+        explanation: `Calculated using book metadata, ${originalPrice ? '₹' + originalPrice + ' original cost,' : ''} purchase date (${purchaseDate}), and condition (${detectedCondition.replace('_', ' ')}). Recommended Resale Price: ₹${prediction.suggestedPrice}, Recommended 5-Day Rental: ₹${prediction.suggestedRentalPrice5Days}. Confidence: ${prediction.confidence}%.`,
+        description: `Textbook in ${detectedCondition.replace('_', ' ')} condition. Calculated by BookBridge Smart Market AI.`
       }
     };
   } catch (error: any) {
-    return { success: false, error: error.message || 'AI processing failed' };
+    return { success: false, error: error.message || 'AI valuation processing failed' };
   }
 }
 

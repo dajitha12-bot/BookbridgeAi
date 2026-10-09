@@ -3,6 +3,12 @@ import { Book } from '../../types';
 import { generateId } from './dbHelper';
 
 function mapRowToBook(row: any): Book {
+  const cleanIsbn = (row.isbn || '').replace(/[^0-9X]/gi, '');
+  let resolvedImageUrl = row.image_url || null;
+  if (!resolvedImageUrl && cleanIsbn) {
+    resolvedImageUrl = `https://covers.openlibrary.org/b/isbn/${cleanIsbn}-L.jpg`;
+  }
+
   return {
     id: row.id,
     ownerId: row.owner_id,
@@ -20,7 +26,7 @@ function mapRowToBook(row: any): Book {
     securityDeposit: row.security_deposit || 0,
     condition: row.condition || 'GOOD',
     description: row.description || '',
-    imageUrl: row.image_url || null,
+    imageUrl: resolvedImageUrl,
     city: row.city || 'Chennai',
     area: row.area || 'Adyar',
     pincode: row.pincode || '600020',
