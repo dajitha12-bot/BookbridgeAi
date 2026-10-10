@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -58,6 +58,27 @@ export default function BookDetailsClient({
   const [activeImgIndex, setActiveImgIndex] = useState(0);
   const [showLightbox, setShowLightbox] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(1.0);
+
+  // Track Recently Accessed Book
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('bookbridge_recent_books');
+      let list = stored ? JSON.parse(stored) : [];
+      if (!Array.isArray(list)) list = [];
+      list = list.filter((b: any) => b.id !== book.id);
+      list.unshift({
+        id: book.id,
+        title: book.title,
+        author: book.author,
+        category: book.category,
+        expectedPrice: book.expectedPrice,
+        condition: book.condition || 'GOOD',
+        imageUrl: book.imageUrl,
+        viewedAt: 'Just now',
+      });
+      localStorage.setItem('bookbridge_recent_books', JSON.stringify(list.slice(0, 10)));
+    } catch {}
+  }, [book.id]);
 
   // Checkout flow state
   const [showCheckout, setShowCheckout] = useState(false);

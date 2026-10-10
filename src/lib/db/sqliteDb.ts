@@ -522,6 +522,18 @@ export function initDatabase() {
       FOREIGN KEY (chat_id) REFERENCES assistant_chats(id) ON DELETE CASCADE
     );
 
+    -- 35. API Keys Table
+    CREATE TABLE IF NOT EXISTS api_keys (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      api_key TEXT UNIQUE NOT NULL,
+      name TEXT NOT NULL DEFAULT 'Default API Key',
+      is_active BOOLEAN DEFAULT 1,
+      last_used_at DATETIME,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+
     -- Create Indexes for Query Performance
     CREATE INDEX IF NOT EXISTS idx_books_owner ON books(owner_id);
     CREATE INDEX IF NOT EXISTS idx_books_category ON books(category);
@@ -538,6 +550,8 @@ export function initDatabase() {
     CREATE INDEX IF NOT EXISTS idx_book_images_book ON book_images(book_id);
     CREATE INDEX IF NOT EXISTS idx_assistant_chats_user ON assistant_chats(user_id);
     CREATE INDEX IF NOT EXISTS idx_assistant_messages_chat ON assistant_messages(chat_id);
+    CREATE INDEX IF NOT EXISTS idx_api_keys_user ON api_keys(user_id);
+    CREATE INDEX IF NOT EXISTS idx_api_keys_key ON api_keys(api_key);
   `);
 
   // Initialize delivery settings default row if missing
@@ -557,44 +571,71 @@ export function initDatabase() {
  * Seeds initial database data for mandatory demo users, books, market metrics, rentals, exchanges, etc.
  */
 function seedInitialData() {
-  const userCount = db.prepare('SELECT COUNT(*) as count FROM users').get() as { count: number };
-  const bookCount = db.prepare('SELECT COUNT(*) as count FROM books').get() as { count: number };
-
-  if (userCount.count > 0 && bookCount.count >= 12) {
-    return; // Already fully seeded
-  }
-
-  console.log('Seeding SQLite database bookbridge.db with rich demonstration records...');
-
   const userPwdHash = hashPassword('user123');
   const staffPwdHash = hashPassword('staff123');
   const adminPwdHash = hashPassword('admin123');
 
-  // Insert Users
+  // Insert / Update Users safely without triggering FK deletion cascades
+  const checkUser = db.prepare('SELECT id FROM users WHERE email = ?');
+  const updateUser = db.prepare(`
+    UPDATE users SET name = ?, phone = ?, password_hash = ?, role = ?, status = 'ACTIVE' WHERE email = ?
+  `);
   const insertUser = db.prepare(`
-    INSERT OR REPLACE INTO users (id, email, name, phone, password_hash, role, status)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO users (id, email, name, phone, password_hash, role, status)
+    VALUES (?, ?, ?, ?, ?, ?, 'ACTIVE')
   `);
 
+  const checkProfile = db.prepare('SELECT user_id FROM profiles WHERE user_id = ?');
+  const updateProfile = db.prepare(`
+    UPDATE profiles SET city = ?, area = ?, address = ?, pincode = ?, latitude = ?, longitude = ? WHERE user_id = ?
+  `);
   const insertProfile = db.prepare(`
-    INSERT OR REPLACE INTO profiles (user_id, city, area, address, pincode, latitude, longitude)
+    INSERT INTO profiles (user_id, city, area, address, pincode, latitude, longitude)
     VALUES (?, ?, ?, ?, ?, ?, ?)
   `);
 
-  // Demo Accounts
+  // Demo Accounts - Guarantee at least 5 verified users + staff + admin
   const usersToSeed = [
-    { id: 'usr-user1', email: 'ajitha@gmail.com', name: 'Ajitha', phone: '9123456780', hash: userPwdHash, role: 'USER', city: 'Chennai', area: 'Adyar', address: '10, Kasturiba Nagar', pincode: '600020', lat: 13.0067, lng: 80.2572 },
+    { id: 'usr-user1', email: 'ajitha@gmail.com', name: 'Ajitha R.', phone: '9123456780', hash: userPwdHash, role: 'USER', city: 'Chennai', area: 'Adyar', address: '10, Kasturiba Nagar', pincode: '600020', lat: 13.0067, lng: 80.2572 },
+    { id: 'usr-user3', email: 'priya@gmail.com', name: 'Priya Patel', phone: '9123456782', hash: userPwdHash, role: 'USER', city: 'Chennai', area: 'Velachery', address: '8, Bypass Road', pincode: '600042', lat: 12.9815, lng: 80.2185 },
+    { id: 'usr-user4', email: 'karthik@gmail.com', name: 'Karthik Raja', phone: '9123456783', hash: userPwdHash, role: 'USER', city: 'Madurai', area: 'KK Nagar', address: '22, Lake View Road', pincode: '625020', lat: 9.9322, lng: 78.1485 },
+    { id: 'usr-user5', email: 'ananya@gmail.com', name: 'Ananya Sharma', phone: '9123456784', hash: userPwdHash, role: 'USER', city: 'Coimbatore', area: 'RS Puram', address: '54, DB Road', pincode: '641002', lat: 11.0084, lng: 76.9535 },
+    { id: 'usr-user6', email: 'aravind@gmail.com', name: 'Aravind Swaminathan', phone: '9123456785', hash: userPwdHash, role: 'USER', city: 'Tiruchirappalli', area: 'Thillai Nagar', address: '17, 11th Cross', pincode: '620018', lat: 10.8267, lng: 78.6824 },
     { id: 'usr-user', email: 'user@bookbridge.com', name: 'Standard User', phone: '9123456781', hash: userPwdHash, role: 'USER', city: 'Chennai', area: 'Mylapore', address: '14, Luz Church Road', pincode: '600004', lat: 13.0333, lng: 80.2667 },
     { id: 'usr-staff1', email: 'dhinesh@delivery.com', name: 'Dhinesh Kumar', phone: '9876543210', hash: staffPwdHash, role: 'DELIVERY_STAFF', city: 'Chennai', area: 'Guindy', address: '45, Mount Road', pincode: '600032', lat: 13.0067, lng: 80.2206 },
     { id: 'usr-staff', email: 'staff@bookbridge.com', name: 'Arun Kumar', phone: '9876543211', hash: staffPwdHash, role: 'DELIVERY_STAFF', city: 'Madurai', area: 'Anna Nagar', address: '8, Sathamangalam', pincode: '625020', lat: 9.9252, lng: 78.1198 },
-    { id: 'usr-admin', email: 'admin@bookbridge.com', name: 'Platform Admin', phone: '9988776655', hash: adminPwdHash, role: 'ADMIN', city: 'Chennai', area: 'Nungambakkam', address: '12, College Road', pincode: '600006', lat: 13.0612, lng: 80.2514 },
-    { id: 'usr-user3', email: 'priya@gmail.com', name: 'Priya Patel', phone: '9123456782', hash: userPwdHash, role: 'USER', city: 'Chennai', area: 'Velachery', address: '8, Bypass Road', pincode: '600042', lat: 12.9815, lng: 80.2185 },
-    { id: 'usr-user4', email: 'karthik@gmail.com', name: 'Karthik Raja', phone: '9123456783', hash: userPwdHash, role: 'USER', city: 'Madurai', area: 'KK Nagar', address: '22, Lake View Road', pincode: '625020', lat: 9.9322, lng: 78.1485 }
+    { id: 'usr-admin', email: 'admin@bookbridge.com', name: 'Platform Admin', phone: '9988776655', hash: adminPwdHash, role: 'ADMIN', city: 'Chennai', area: 'Nungambakkam', address: '12, College Road', pincode: '600006', lat: 13.0612, lng: 80.2514 }
   ];
 
   for (const u of usersToSeed) {
-    insertUser.run(u.id, u.email, u.name, u.phone, u.hash, u.role, 'ACTIVE');
-    insertProfile.run(u.id, u.city, u.area, u.address, u.pincode, u.lat, u.lng);
+    const existing = checkUser.get(u.email) as { id: string } | undefined;
+    let uid = u.id;
+    if (existing) {
+      uid = existing.id;
+      updateUser.run(u.name, u.phone, u.hash, u.role, u.email);
+    } else {
+      insertUser.run(u.id, u.email, u.name, u.phone, u.hash, u.role);
+    }
+
+    const existingProf = checkProfile.get(uid);
+    if (existingProf) {
+      updateProfile.run(u.city, u.area, u.address, u.pincode, u.lat, u.lng, uid);
+    } else {
+      insertProfile.run(uid, u.city, u.area, u.address, u.pincode, u.lat, u.lng);
+    }
+  }
+
+  // Ensure default API keys for testing
+  const insertApiKey = db.prepare(`
+    INSERT OR IGNORE INTO api_keys (id, user_id, api_key, name, is_active, created_at)
+    VALUES (?, ?, ?, ?, 1, CURRENT_TIMESTAMP)
+  `);
+  insertApiKey.run('apk-1', 'usr-user1', 'bk_live_ajitha12_bookbridge_ai_demo_key', 'Primary Developer Key');
+  insertApiKey.run('apk-admin', 'usr-admin', 'bk_live_admin_master_super_secret_key', 'Admin Master Key');
+
+  const bookCount = db.prepare('SELECT COUNT(*) as count FROM books').get() as { count: number };
+  if (bookCount.count >= 12) {
+    return; // Books and related tables already seeded
   }
 
   // Insert Delivery Staff Details

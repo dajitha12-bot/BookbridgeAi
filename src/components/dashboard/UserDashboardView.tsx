@@ -16,6 +16,7 @@ import {
   HelpCircle,
   Truck
 } from 'lucide-react';
+import RecentlyAccessedShelf from './RecentlyAccessedShelf';
 
 interface UserDashboardProps {
   user: any;
@@ -98,6 +99,9 @@ export default function UserDashboardView({
           );
         })}
       </div>
+
+      {/* Recently Accessed Books Shelf */}
+      <RecentlyAccessedShelf />
 
       {/* Book Search Bar & Request */}
       <div className="bg-white p-6 rounded-xl border border-slate-100 shadow-xs space-y-4">

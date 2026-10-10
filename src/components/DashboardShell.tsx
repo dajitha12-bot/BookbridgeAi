@@ -33,9 +33,12 @@ import {
   ClipboardList,
   CheckCircle2,
   Package,
+  Key,
 } from 'lucide-react';
 
 import BookBridgeAssistantWidget from './BookBridgeAssistantWidget';
+import LanguageSelector from './LanguageSelector';
+import { useLanguage } from '../context/LanguageContext';
 
 interface SidebarItem {
   label: string;
@@ -47,6 +50,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
   const pathname = usePathname();
   const { user, logout } = useAuth();
   const { unreadCount } = useNotifications();
+  const { t } = useLanguage();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -68,35 +72,37 @@ export default function DashboardShell({ children }: { children: React.ReactNode
 
   if (role === 'USER') {
     navigation = [
-      { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-      { label: 'Browse Books', href: '/browse', icon: Search },
-      { label: 'My Books', href: '/dashboard/my-books', icon: BookOpen },
-      { label: 'Add Book', href: '/dashboard/add-book', icon: PlusCircle },
-      { label: 'Market Intelligence', href: '/dashboard/market-intelligence', icon: Brain },
-      { label: 'Rent Books', href: '/dashboard/rentals', icon: ClipboardList },
-      { label: 'Book Donations', href: '/dashboard/donations', icon: Gift },
+      { label: t('dashboard'), href: '/dashboard', icon: LayoutDashboard },
+      { label: t('browseBooks'), href: '/browse', icon: Search },
+      { label: t('myBooks'), href: '/dashboard/my-books', icon: BookOpen },
+      { label: t('addBook'), href: '/dashboard/add-book', icon: PlusCircle },
+      { label: t('marketIntelligence'), href: '/dashboard/market-intelligence', icon: Brain },
+      { label: t('rentBooks'), href: '/dashboard/rentals', icon: ClipboardList },
+      { label: t('donations'), href: '/dashboard/donations', icon: Gift },
       { label: 'Book Requests', href: '/dashboard/requests', icon: MessageSquarePlus },
-      { label: 'Exchange', href: '/dashboard/exchange', icon: RefreshCw },
-      { label: 'Chat / Messages', href: '/dashboard/chat', icon: MessageSquarePlus },
-      { label: 'Delivery Tracking', href: '/dashboard/tracking', icon: Truck },
+      { label: t('exchange'), href: '/dashboard/exchange', icon: RefreshCw },
+      { label: t('chatMessages'), href: '/dashboard/chat', icon: MessageSquarePlus },
+      { label: t('deliveryTracking'), href: '/dashboard/tracking', icon: Truck },
+      { label: t('apiAccess'), href: '/dashboard/api-access', icon: Key },
       { label: 'Payment History', href: '/dashboard/payment-history', icon: CreditCard },
       { label: 'Notifications', href: '/dashboard/notifications', icon: Bell },
       { label: 'Profile', href: '/dashboard/profile', icon: UserIcon },
-      { label: 'Settings', href: '/dashboard/settings', icon: SettingsIcon },
+      { label: t('settings'), href: '/dashboard/settings', icon: SettingsIcon },
     ];
   } else if (role === 'ADMIN') {
     navigation = [
-      { label: 'Dashboard', href: '/admin', icon: LayoutDashboard },
+      { label: t('dashboard'), href: '/admin', icon: LayoutDashboard },
       { label: 'Users & Delivery Staff', href: '/admin/users', icon: UsersIcon },
       { label: 'Books', href: '/admin/books', icon: BookOpen },
       { label: 'Orders', href: '/admin/orders', icon: ShoppingBag },
       { label: 'Exchanges', href: '/admin/exchanges', icon: RefreshCw },
       { label: 'Rentals', href: '/admin/rentals', icon: ClipboardList },
       { label: 'Donations', href: '/admin/donations', icon: Gift },
+      { label: t('apiAccess'), href: '/dashboard/api-access', icon: Key },
       { label: 'Payment History', href: '/admin/payment-history', icon: CreditCard },
       { label: 'Reports / Demand', href: '/admin/reports', icon: BarChart3 },
       { label: 'AI Price Analytics', href: '/admin/ai-price', icon: Brain },
-      { label: 'Settings', href: '/admin/settings', icon: SettingsIcon },
+      { label: t('settings'), href: '/admin/settings', icon: SettingsIcon },
     ];
   } else if (role === 'DELIVERY_STAFF') {
     navigation = [
@@ -165,6 +171,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
         </div>
 
         <div className="flex items-center space-x-3">
+          <LanguageSelector />
           <Link href="/dashboard/notifications" className="relative p-2 text-slate-300 hover:text-white">
             <Bell className="w-5 h-5" />
             {unreadCount > 0 && (
@@ -257,6 +264,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
             </div>
 
             <div className="flex items-center space-x-4">
+              <LanguageSelector />
               <Link
                 href="/dashboard/notifications"
                 className="relative p-2 text-slate-400 hover:text-slate-600 transition-colors rounded-lg hover:bg-slate-100"
