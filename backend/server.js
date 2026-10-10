@@ -52,6 +52,51 @@ function getEnvVar(key) {
 // REST API ENDPOINTS FOR POSTMAN MANUAL TESTING
 // ----------------------------------------------------
 
+// Root API Dashboard
+app.get('/', (req, res) => {
+  res.send(`
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>BookBridge AI – Backend API Server</title>
+        <style>
+          body { font-family: system-ui, -apple-system, sans-serif; background: #0f172a; color: #f8fafc; padding: 2rem; }
+          .container { max-width: 800px; margin: 0 auto; background: #1e293b; padding: 2rem; rounded: 1rem; border: 1px solid #334155; border-radius: 12px; }
+          h1 { color: #38bdf8; font-size: 1.75rem; margin-top: 0; }
+          p { color: #94a3b8; font-size: 0.95rem; }
+          .badge { display: inline-block; background: #0284c7; color: white; padding: 0.25rem 0.75rem; border-radius: 9999px; font-weight: bold; font-size: 0.75rem; }
+          ul { list-style: none; padding: 0; }
+          li { margin: 0.75rem 0; padding: 0.75rem; background: #0f172a; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; }
+          a { color: #38bdf8; text-decoration: none; font-weight: bold; font-family: monospace; font-size: 0.9rem; }
+          a:hover { text-decoration: underline; }
+          .method { font-weight: bold; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; }
+          .get { background: #065f46; color: #34d399; }
+          .post { background: #1e3a8a; color: #60a5fa; }
+          .put { background: #78350f; color: #fbbf24; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <span class="badge">ONLINE</span>
+          <h1>🚀 BookBridge AI Backend REST API</h1>
+          <p>The standalone backend server is running cleanly on <code>http://localhost:5000</code>.</p>
+          <h3>Available REST API Endpoints:</h3>
+          <ul>
+            <li><span><span class="method get">GET</span> <a href="/api/health" target="_blank">/api/health</a></span> <span>Health Status</span></li>
+            <li><span><span class="method get">GET</span> <a href="/api/books" target="_blank">/api/books</a></span> <span>List All Books</span></li>
+            <li><span><span class="method get">GET</span> <a href="/api/books/bk-1" target="_blank">/api/books/bk-1</a></span> <span>Book Details</span></li>
+            <li><span><span class="method get">GET</span> <a href="/api/orders" target="_blank">/api/orders</a></span> <span>List All Orders</span></li>
+            <li><span><span class="method get">GET</span> <a href="/api/deliveries" target="_blank">/api/deliveries</a></span> <span>List All Deliveries</span></li>
+            <li><span><span class="method post">POST</span> <code>/api/auth/login</code></span> <span>User Login</span></li>
+            <li><span><span class="method post">POST</span> <code>/api/ai/fair-price</code></span> <span>Fair Price Prediction</span></li>
+            <li><span><span class="method post">POST</span> <code>/api/email/send-test</code></span> <span>Realtime Email Test</span></li>
+          </ul>
+        </div>
+      </body>
+    </html>
+  `);
+});
+
 // Health Check
 app.get('/api/health', (req, res) => {
   res.json({
