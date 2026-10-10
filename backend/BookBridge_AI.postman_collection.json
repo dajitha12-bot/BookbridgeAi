@@ -1,0 +1,223 @@
+{
+  "info": {
+    "_postman_id": "b8123456-789a-4bcd-ef01-23456789abcd",
+    "name": "BookBridge AI - Backend REST API Collection",
+    "description": "Complete Postman REST API testing collection for BookBridge AI Backend Express Server (Port 5000).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "0. Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:5000/api/health",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5000",
+          "path": ["api", "health"]
+        }
+      }
+    },
+    {
+      "name": "1. Auth - User Login (Ajitha)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"ajitha@gmail.com\",\n  \"password\": \"user123\",\n  \"role\": \"USER\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:5000/api/auth/login",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5000",
+          "path": ["api", "auth", "login"]
+        }
+      }
+    },
+    {
+      "name": "2. Auth - Delivery Staff Login",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"dhinesh@delivery.com\",\n  \"password\": \"staff123\",\n  \"role\": \"DELIVERY_STAFF\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:5000/api/auth/login",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5000",
+          "path": ["api", "auth", "login"]
+        }
+      }
+    },
+    {
+      "name": "3. Books - Get All Books",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:5000/api/books",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5000",
+          "path": ["api", "books"]
+        }
+      }
+    },
+    {
+      "name": "4. Books - Get Book Details by ID",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:5000/api/books/bk-1",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5000",
+          "path": ["api", "books", "bk-1"]
+        }
+      }
+    },
+    {
+      "name": "5. Books - Add New Book Listing",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"ownerId\": \"usr-user1\",\n  \"title\": \"System Design Interview\",\n  \"author\": \"Alex Xu\",\n  \"category\": \"Programming\",\n  \"originalPrice\": 2500,\n  \"expectedPrice\": 1400,\n  \"condition\": \"VERY_GOOD\",\n  \"isbn\": \"9781736049112\",\n  \"description\": \"Clean copy covering scalable backend system architecture.\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:5000/api/books",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5000",
+          "path": ["api", "books"]
+        }
+      }
+    },
+    {
+      "name": "6. Orders - Get All Orders",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:5000/api/orders",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5000",
+          "path": ["api", "orders"]
+        }
+      }
+    },
+    {
+      "name": "7. Orders - Create New Order",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"buyerId\": \"usr-user1\",\n  \"sellerId\": \"usr-user3\",\n  \"bookId\": \"bk-3\",\n  \"amount\": 1200,\n  \"deliveryCharge\": 30,\n  \"deliveryMethod\": \"DELIVERY\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:5000/api/orders",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5000",
+          "path": ["api", "orders"]
+        }
+      }
+    },
+    {
+      "name": "8. Deliveries - Get Staff Deliveries",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:5000/api/deliveries?staffId=usr-staff1",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5000",
+          "path": ["api", "deliveries"],
+          "query": [
+            { "key": "staffId", "value": "usr-staff1" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "9. Deliveries - Update Status",
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"status\": \"DELIVERED\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:5000/api/deliveries/del-1/status",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5000",
+          "path": ["api", "deliveries", "del-1", "status"]
+        }
+      }
+    },
+    {
+      "name": "10. AI - Fair Price Prediction",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"originalPrice\": 2000,\n  \"condition\": \"VERY_GOOD\",\n  \"daysUsed\": 120,\n  \"category\": \"Programming\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:5000/api/ai/fair-price",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5000",
+          "path": ["api", "ai", "fair-price"]
+        }
+      }
+    },
+    {
+      "name": "11. Email - Send Realtime Mail Test (Gmail)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"to\": \"ajitha@gmail.com\",\n  \"subject\": \"Postman Realtime Mail Dispatch Test\",\n  \"html\": \"<h2>BookBridge AI Postman Email Test</h2><p>This mail was triggered directly from Postman via backend Express API.</p>\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:5000/api/email/send-test",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5000",
+          "path": ["api", "email", "send-test"]
+        }
+      }
+    }
+  ]
+}

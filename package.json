@@ -8,12 +8,15 @@
     "start": "next start",
     "lint": "eslint",
     "db:init": "tsx -e \"import { initDatabase } from './src/lib/db/sqliteDb.ts'; initDatabase(); console.log('Database initialized successfully');\"",
-    "db:seed": "tsx -e \"import { initDatabase } from './src/lib/db/sqliteDb.ts'; initDatabase(); console.log('Database seeded successfully');\""
+    "db:seed": "tsx -e \"import { initDatabase } from './src/lib/db/sqliteDb.ts'; initDatabase(); console.log('Database seeded successfully');\"",
+    "backend": "node backend/server.js"
   },
   "dependencies": {
     "@tensorflow/tfjs": "^4.22.0",
     "@types/better-sqlite3": "^9.6.0",
     "better-sqlite3": "^13.0.3",
+    "cors": "^2.8.6",
+    "express": "^5.3.0",
     "lucide-react": "^0.469.0",
     "next": "^15.1.7",
     "nodemailer": "^10.0.13",
@@ -24,6 +27,8 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.0.0",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
     "@types/node": "^20.0.0",
     "@types/nodemailer": "^8.0.2",
     "@types/react": "^19.0.0",
