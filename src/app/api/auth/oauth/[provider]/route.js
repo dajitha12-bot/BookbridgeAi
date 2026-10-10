@@ -3,7 +3,7 @@ import { getUserByEmail, createUser } from "../../../../../lib/db/users";
 import { signJwt } from "../../../../../lib/auth/jwt";
 import { createSession } from "../../../../../lib/auth/session";
 import { hashPassword } from "../../../../../lib/auth/hash";
-const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic";
 async function GET(request, { params }) {
   const { provider } = await params;
   const targetProvider = provider.toLowerCase();
@@ -109,6 +109,4 @@ async function POST(request, { params }) {
 }
 export {
   GET,
-  POST,
-  dynamic
-};
+  POST};

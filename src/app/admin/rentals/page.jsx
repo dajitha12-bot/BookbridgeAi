@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { getAllRentals } from "../../../lib/db/rentals";
 import { getAllBooks } from "../../../lib/db/books";
 import { ClipboardList } from "lucide-react";
-const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic";
 async function AdminRentalsPage() {
   const session = await getSession();
   if (!session || session.role !== "ADMIN") redirect("/login");
@@ -65,6 +65,4 @@ async function AdminRentalsPage() {
     </div>;
 }
 export {
-  AdminRentalsPage as default,
-  dynamic
-};
+  AdminRentalsPage as default};

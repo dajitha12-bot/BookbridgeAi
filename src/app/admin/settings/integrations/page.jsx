@@ -1,7 +1,7 @@
 import { getSession } from "../../../../lib/auth/session";
 import { redirect } from "next/navigation";
 import IntegrationsClient from "./IntegrationsClient";
-const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic";
 async function AdminIntegrationsPage() {
   const session = await getSession();
   if (!session || session.role !== "ADMIN") {
@@ -10,6 +10,4 @@ async function AdminIntegrationsPage() {
   return <IntegrationsClient />;
 }
 export {
-  AdminIntegrationsPage as default,
-  dynamic
-};
+  AdminIntegrationsPage as default};

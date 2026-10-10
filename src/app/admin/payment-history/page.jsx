@@ -2,7 +2,7 @@ import { getSession } from "../../../lib/auth/session";
 import { redirect } from "next/navigation";
 import { getAllPayments } from "../../../lib/db/payments";
 import { CreditCard } from "lucide-react";
-const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic";
 async function AdminPaymentHistoryPage() {
   const session = await getSession();
   if (!session || session.role !== "ADMIN") redirect("/login");
@@ -64,6 +64,4 @@ async function AdminPaymentHistoryPage() {
     </div>;
 }
 export {
-  AdminPaymentHistoryPage as default,
-  dynamic
-};
+  AdminPaymentHistoryPage as default};

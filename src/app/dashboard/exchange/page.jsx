@@ -5,7 +5,7 @@ import { getUserById } from "../../../lib/db/users";
 import { getRequestsByUser } from "../../../lib/db/bookRequests";
 import ExchangeClient from "../../../components/dashboard/ExchangeClient";
 import { redirect } from "next/navigation";
-const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic";
 async function ExchangePage() {
   const session = await getSession();
   if (!session) redirect("/login");
@@ -67,6 +67,4 @@ async function ExchangePage() {
   />;
 }
 export {
-  ExchangePage as default,
-  dynamic
-};
+  ExchangePage as default};

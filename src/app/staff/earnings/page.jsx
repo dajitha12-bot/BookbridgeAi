@@ -4,7 +4,7 @@ import { getAllDeliveries } from "../../../lib/db/deliveries";
 import { getAllOrders } from "../../../lib/db/orders";
 import { getAllBooks } from "../../../lib/db/books";
 import { DollarSign, CheckCircle2 } from "lucide-react";
-const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic";
 async function StaffEarningsPage() {
   const session = await getSession();
   if (!session || session.role !== "DELIVERY_STAFF") redirect("/login");
@@ -96,6 +96,4 @@ async function StaffEarningsPage() {
     </div>;
 }
 export {
-  StaffEarningsPage as default,
-  dynamic
-};
+  StaffEarningsPage as default};

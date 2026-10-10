@@ -2,7 +2,7 @@ import { getSession } from "../../../lib/auth/session";
 import { getWishlistAction } from "../../../actions/wishlistActions";
 import WishlistClient from "../../../components/dashboard/WishlistClient";
 import { redirect } from "next/navigation";
-const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic";
 async function WishlistPage() {
   const session = await getSession();
   if (!session) redirect("/login");
@@ -11,6 +11,4 @@ async function WishlistPage() {
   return <WishlistClient initialWishlist={wishlist} />;
 }
 export {
-  WishlistPage as default,
-  dynamic
-};
+  WishlistPage as default};

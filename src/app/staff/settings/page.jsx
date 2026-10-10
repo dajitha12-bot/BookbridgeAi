@@ -1,7 +1,7 @@
 import { getSession } from "../../../lib/auth/session";
 import { redirect } from "next/navigation";
 import { Settings as SettingsIcon, Shield } from "lucide-react";
-const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic";
 async function StaffSettingsPage() {
   const session = await getSession();
   if (!session || session.role !== "DELIVERY_STAFF") redirect("/login");
@@ -36,6 +36,4 @@ async function StaffSettingsPage() {
     </div>;
 }
 export {
-  StaffSettingsPage as default,
-  dynamic
-};
+  StaffSettingsPage as default};

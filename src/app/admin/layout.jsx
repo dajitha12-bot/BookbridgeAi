@@ -2,7 +2,7 @@ import { getSession } from "../../lib/auth/session";
 import { getMeAction } from "../../actions/authActions";
 import DashboardShell from "../../components/DashboardShell";
 import { AuthProvider } from "../../components/AuthProvider";
-const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic";
 async function AdminLayout({
   children
 }) {
@@ -32,6 +32,4 @@ async function AdminLayout({
     </AuthProvider>;
 }
 export {
-  AdminLayout as default,
-  dynamic
-};
+  AdminLayout as default};

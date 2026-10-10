@@ -1,7 +1,7 @@
 import { getSession } from "../../../lib/auth/session";
 import { redirect } from "next/navigation";
 import { Brain, Sparkles, TrendingUp, DollarSign } from "lucide-react";
-const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic";
 async function AdminAiPricePage() {
   const session = await getSession();
   if (!session || session.role !== "ADMIN") redirect("/login");
@@ -45,6 +45,4 @@ async function AdminAiPricePage() {
     </div>;
 }
 export {
-  AdminAiPricePage as default,
-  dynamic
-};
+  AdminAiPricePage as default};

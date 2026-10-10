@@ -205,7 +205,7 @@ function MyBooksClient({
                         </div>}
 
                       {displayStatus === "SOLD" && <div className="mt-3 bg-slate-100 border border-slate-200 p-2.5 rounded-xl text-[11px] text-slate-700 font-medium">
-                          Sold to: <strong>{book.saleBuyer || "Community Buyer"}</strong>
+                          Sold to: <strong>{book.buyerName || book.saleBuyer || "Community Buyer"}</strong>
                         </div>}
 
                       {displayStatus === "EXCHANGED" && <div className="mt-3 bg-amber-50 border border-amber-200 p-2.5 rounded-xl text-[11px] text-amber-800 font-medium">

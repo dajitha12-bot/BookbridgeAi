@@ -2,7 +2,7 @@ import { getSession } from "../../../lib/auth/session";
 import { redirect } from "next/navigation";
 import { getAllDeliveries, getAllDeliveryStaff } from "../../../lib/db/deliveries";
 import { ClipboardList, User } from "lucide-react";
-const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic";
 async function AdminDeliveriesPage() {
   const session = await getSession();
   if (!session || session.role !== "ADMIN") redirect("/login");
@@ -61,6 +61,4 @@ async function AdminDeliveriesPage() {
     </div>;
 }
 export {
-  AdminDeliveriesPage as default,
-  dynamic
-};
+  AdminDeliveriesPage as default};

@@ -8,8 +8,10 @@ import { getWishlistByUser } from "../../lib/db/wishlist";
 import { getRequestsByUser } from "../../lib/db/bookRequests";
 import { calculateDistance } from "../../lib/utils/distance";
 import UserDashboardView from "../../components/dashboard/UserDashboardView";
-const dynamic = "force-dynamic";
-async function DashboardPage() {
+
+export const dynamic = "force-dynamic";
+
+export default async function DashboardPage() {
   const session = await getSession();
   if (!session) {
     redirect("/login");
@@ -130,7 +132,3 @@ async function DashboardPage() {
     bookRequests={bookRequests}
   />;
 }
-export {
-  DashboardPage as default,
-  dynamic
-};

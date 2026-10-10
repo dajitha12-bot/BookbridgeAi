@@ -2,7 +2,7 @@ import { getSession } from "../../../lib/auth/session";
 import { redirect } from "next/navigation";
 import { getNotificationsByUser } from "../../../lib/db/notifications";
 import { Bell, Info } from "lucide-react";
-const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic";
 async function StaffNotificationsPage() {
   const session = await getSession();
   if (!session || session.role !== "DELIVERY_STAFF") redirect("/login");
@@ -40,6 +40,4 @@ async function StaffNotificationsPage() {
     </div>;
 }
 export {
-  StaffNotificationsPage as default,
-  dynamic
-};
+  StaffNotificationsPage as default};

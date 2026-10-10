@@ -8,13 +8,15 @@ import { getUserOrdersAction, getUserSalesAction } from "../../../actions/orderA
 import { getUserById } from "../../../lib/db/users";
 import MyBooksClient from "./MyBooksClient";
 import { redirect } from "next/navigation";
-const dynamic = "force-dynamic";
-async function MyBooksPage() {
+
+export const dynamic = "force-dynamic";
+
+export default async function MyBooksPage() {
   const session = await getSession();
   if (!session) redirect("/login");
   const currentUserId = session.id || "usr-user1";
   const listedBooks = await getBooksByOwner(currentUserId);
-  listedBooks.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  listedBooks.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
   const rawWishlist = await getWishlistByUser(currentUserId);
   const wishlist = await Promise.all(
     rawWishlist.map(async (w) => {
@@ -101,7 +103,3 @@ async function MyBooksPage() {
     initialDonatedBooks={myDonatedBooks}
   />;
 }
-export {
-  MyBooksPage as default,
-  dynamic
-};

@@ -4,7 +4,7 @@ import { getOrderById } from "../../../../../lib/db/orders";
 import { getBookById } from "../../../../../lib/db/books";
 import { getUserById } from "../../../../../lib/db/users";
 import { getSellerUpiByUserId } from "../../../../../lib/db/sellerUpi";
-const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic";
 async function GET(request, { params }) {
   const { id } = await params;
   const payment = await getPaymentById(id);
@@ -140,6 +140,4 @@ async function GET(request, { params }) {
   });
 }
 export {
-  GET,
-  dynamic
-};
+  GET};

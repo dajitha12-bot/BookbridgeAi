@@ -2,7 +2,7 @@ import { getSession } from "../../../lib/auth/session";
 import { redirect } from "next/navigation";
 import { getAllUsers } from "../../../lib/db/users";
 import { Users as UsersIcon } from "lucide-react";
-const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic";
 async function AdminUsersPage() {
   const session = await getSession();
   if (!session || session.role !== "ADMIN") redirect("/login");
@@ -52,6 +52,4 @@ async function AdminUsersPage() {
     </div>;
 }
 export {
-  AdminUsersPage as default,
-  dynamic
-};
+  AdminUsersPage as default};

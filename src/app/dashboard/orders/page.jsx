@@ -3,7 +3,7 @@ import { getAllReviews } from "../../../lib/db/reviews";
 import { getUserOrdersAction, getAllSystemOrdersAction } from "../../../actions/orderActions";
 import OrdersClient from "../../../components/dashboard/OrdersClient";
 import { redirect } from "next/navigation";
-const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic";
 async function OrdersPage() {
   const session = await getSession();
   if (!session) redirect("/login");
@@ -37,6 +37,4 @@ async function OrdersPage() {
   />;
 }
 export {
-  OrdersPage as default,
-  dynamic
-};
+  OrdersPage as default};

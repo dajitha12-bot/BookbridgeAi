@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { getAllDonationRequests } from "../../../lib/db/donations";
 import { getAllBooks } from "../../../lib/db/books";
 import DonationPortalClient from "./DonationPortalClient";
-const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic";
 async function DonationsPage() {
   const session = await getSession();
   if (!session) redirect("/login");
@@ -20,6 +20,4 @@ async function DonationsPage() {
   />;
 }
 export {
-  DonationsPage as default,
-  dynamic
-};
+  DonationsPage as default};

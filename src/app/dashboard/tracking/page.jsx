@@ -7,7 +7,7 @@ import { getUserById } from "../../../lib/db/users";
 import { getPaymentByOrderId } from "../../../lib/db/payments";
 import { getTrackingEventsByOrder } from "../../../lib/db/trackingEvents";
 import TrackingClient from "./TrackingClient";
-const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic";
 async function UserTrackingPage() {
   const session = await getSession();
   if (!session) redirect("/login");
@@ -50,6 +50,4 @@ async function UserTrackingPage() {
   return <TrackingClient initialTrackingItems={trackingItems} />;
 }
 export {
-  UserTrackingPage as default,
-  dynamic
-};
+  UserTrackingPage as default};

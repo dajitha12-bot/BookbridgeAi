@@ -6,7 +6,7 @@ import { getAllExchanges } from "../../../lib/db/exchanges";
 import { getAllDeliveries } from "../../../lib/db/deliveries";
 import { redirect } from "next/navigation";
 import { BarChart3 } from "lucide-react";
-const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic";
 async function ReportsPage({
   searchParams
 }) {
@@ -164,6 +164,4 @@ async function ReportsPage({
     </div>;
 }
 export {
-  ReportsPage as default,
-  dynamic
-};
+  ReportsPage as default};

@@ -5,7 +5,7 @@ import { getOrderById } from "../../lib/db/orders";
 import { getBookById } from "../../lib/db/books";
 import { getUserById } from "../../lib/db/users";
 import DeliveryDashboardView from "../../components/dashboard/DeliveryDashboardView";
-const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic";
 async function StaffDashboardPage() {
   const session = await getSession();
   if (!session || session.role !== "DELIVERY_STAFF") {
@@ -59,6 +59,4 @@ async function StaffDashboardPage() {
   />;
 }
 export {
-  StaffDashboardPage as default,
-  dynamic
-};
+  StaffDashboardPage as default};

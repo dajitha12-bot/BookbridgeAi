@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { getAllRentals } from "../../../lib/db/rentals";
 import { getAllBooks } from "../../../lib/db/books";
 import { Truck } from "lucide-react";
-const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic";
 async function StaffRentalDeliveriesPage() {
   const session = await getSession();
   if (!session || session.role !== "DELIVERY_STAFF") redirect("/login");
@@ -55,6 +55,4 @@ async function StaffRentalDeliveriesPage() {
     </div>;
 }
 export {
-  StaffRentalDeliveriesPage as default,
-  dynamic
-};
+  StaffRentalDeliveriesPage as default};

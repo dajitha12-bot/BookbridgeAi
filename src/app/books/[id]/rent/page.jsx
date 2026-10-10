@@ -2,7 +2,7 @@ import { getSession } from "../../../../lib/auth/session";
 import { getBookById } from "../../../../lib/db/books";
 import { redirect } from "next/navigation";
 import RentBookClient from "./RentBookClient";
-const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic";
 async function RentBookPage({
   params
 }) {
@@ -21,6 +21,4 @@ async function RentBookPage({
     </div>;
 }
 export {
-  RentBookPage as default,
-  dynamic
-};
+  RentBookPage as default};

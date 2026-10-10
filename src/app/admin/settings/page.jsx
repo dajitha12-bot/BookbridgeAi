@@ -2,7 +2,7 @@ import { getSession } from "../../../lib/auth/session";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Settings as SettingsIcon, Shield, Zap, ArrowRight, Database, Globe, CreditCard } from "lucide-react";
-const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic";
 async function AdminSettingsPage() {
   const session = await getSession();
   if (!session || session.role !== "ADMIN") redirect("/login");
@@ -96,6 +96,4 @@ async function AdminSettingsPage() {
     </div>;
 }
 export {
-  AdminSettingsPage as default,
-  dynamic
-};
+  AdminSettingsPage as default};

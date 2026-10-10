@@ -4,7 +4,7 @@ import { getProfileByUserId, getUserById } from "../../../lib/db/users";
 import { calculateDistance } from "../../../lib/utils/distance";
 import BookDetailsClient from "../../../components/BookDetailsClient";
 import Link from "next/link";
-const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic";
 async function BookDetailsPage({
   params
 }) {
@@ -116,6 +116,4 @@ async function BookDetailsPage({
     </div>;
 }
 export {
-  BookDetailsPage as default,
-  dynamic
-};
+  BookDetailsPage as default};

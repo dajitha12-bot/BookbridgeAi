@@ -2,7 +2,7 @@ import { getSession } from "../../../lib/auth/session";
 import { redirect } from "next/navigation";
 import DbViewerClient from "./DbViewerClient";
 import { db } from "../../../lib/db/sqliteDb";
-const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic";
 async function AdminDbViewerPage() {
   const session = await getSession();
   if (!session || session.role !== "ADMIN") {
@@ -21,6 +21,4 @@ async function AdminDbViewerPage() {
   return <DbViewerClient tableNames={tableNames} dbData={dbData} />;
 }
 export {
-  AdminDbViewerPage as default,
-  dynamic
-};
+  AdminDbViewerPage as default};

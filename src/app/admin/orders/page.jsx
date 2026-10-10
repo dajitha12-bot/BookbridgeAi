@@ -5,7 +5,7 @@ import { getAllBooks } from "../../../lib/db/books";
 import { getAllUsers } from "../../../lib/db/users";
 import { getAllDeliveries, getAllDeliveryStaff } from "../../../lib/db/deliveries";
 import AdminOrdersClient from "./AdminOrdersClient";
-const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic";
 async function AdminOrdersPage() {
   const session = await getSession();
   if (!session || session.role !== "ADMIN") redirect("/login");
@@ -36,6 +36,4 @@ async function AdminOrdersPage() {
   return <AdminOrdersClient initialOrders={richOrders} staffList={staff} />;
 }
 export {
-  AdminOrdersPage as default,
-  dynamic
-};
+  AdminOrdersPage as default};

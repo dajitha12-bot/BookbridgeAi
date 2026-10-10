@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { getAllPayments } from "../../../lib/db/payments";
 import { getSellerUpiByUserId } from "../../../lib/db/sellerUpi";
 import { CreditCard, Download } from "lucide-react";
-const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic";
 async function UserPaymentHistoryPage() {
   const session = await getSession();
   if (!session) redirect("/login");
@@ -87,6 +87,4 @@ async function UserPaymentHistoryPage() {
     </div>;
 }
 export {
-  UserPaymentHistoryPage as default,
-  dynamic
-};
+  UserPaymentHistoryPage as default};

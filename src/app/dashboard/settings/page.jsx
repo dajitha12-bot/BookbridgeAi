@@ -2,7 +2,7 @@ import { getSession } from "../../../lib/auth/session";
 import { redirect } from "next/navigation";
 import { getProfileByUserId } from "../../../lib/db/users";
 import { Settings as SettingsIcon, Shield, MapPin } from "lucide-react";
-const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic";
 async function UserSettingsPage() {
   const session = await getSession();
   if (!session) redirect("/login");
@@ -84,6 +84,4 @@ async function UserSettingsPage() {
     </div>;
 }
 export {
-  UserSettingsPage as default,
-  dynamic
-};
+  UserSettingsPage as default};

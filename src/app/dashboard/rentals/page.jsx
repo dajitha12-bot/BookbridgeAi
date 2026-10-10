@@ -5,7 +5,7 @@ import { getAllBooks } from "../../../lib/db/books";
 import { getUserById } from "../../../lib/db/users";
 import { getRequestsByUser } from "../../../lib/db/bookRequests";
 import RentalsClient from "../../../components/dashboard/RentalsClient";
-const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic";
 async function DashboardRentalsPage() {
   const session = await getSession();
   if (!session) redirect("/login");
@@ -31,6 +31,4 @@ async function DashboardRentalsPage() {
   />;
 }
 export {
-  DashboardRentalsPage as default,
-  dynamic
-};
+  DashboardRentalsPage as default};

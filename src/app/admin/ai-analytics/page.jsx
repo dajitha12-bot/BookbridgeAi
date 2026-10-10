@@ -3,7 +3,7 @@ import { getAllBooks } from "../../../lib/db/books";
 import { predictFairPrice, mapConditionToScore, trainModel } from "../../../lib/ai/fairPrice";
 import { redirect } from "next/navigation";
 import { Brain, TrendingUp, Sparkles } from "lucide-react";
-const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic";
 async function AiAnalyticsPage() {
   const session = await getSession();
   if (!session || session.role !== "ADMIN") {
@@ -136,6 +136,4 @@ async function AiAnalyticsPage() {
     </div>;
 }
 export {
-  AiAnalyticsPage as default,
-  dynamic
-};
+  AiAnalyticsPage as default};

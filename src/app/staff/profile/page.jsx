@@ -2,7 +2,7 @@ import { getSession } from "../../../lib/auth/session";
 import { redirect } from "next/navigation";
 import { getProfileByUserId } from "../../../lib/db/users";
 import { User, Shield } from "lucide-react";
-const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic";
 async function StaffProfilePage() {
   const session = await getSession();
   if (!session || session.role !== "DELIVERY_STAFF") redirect("/login");
@@ -70,6 +70,4 @@ async function StaffProfilePage() {
     </div>;
 }
 export {
-  StaffProfilePage as default,
-  dynamic
-};
+  StaffProfilePage as default};

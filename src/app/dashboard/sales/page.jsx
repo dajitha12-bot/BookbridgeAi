@@ -2,7 +2,7 @@ import { getSession } from "../../../lib/auth/session";
 import { getUserSalesAction } from "../../../actions/orderActions";
 import SalesClient from "../../../components/dashboard/SalesClient";
 import { redirect } from "next/navigation";
-const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic";
 async function SalesPage() {
   const session = await getSession();
   if (!session) redirect("/login");
@@ -14,6 +14,4 @@ async function SalesPage() {
   return <SalesClient initialSales={salesList} />;
 }
 export {
-  SalesPage as default,
-  dynamic
-};
+  SalesPage as default};

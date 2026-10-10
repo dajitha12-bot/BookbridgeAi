@@ -1,7 +1,7 @@
 import { getOrderForPaymentConfirmAction } from "../../../../actions/orderActions";
 import PaymentConfirmClient from "./PaymentConfirmClient";
 import Link from "next/link";
-const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic";
 async function PaymentConfirmPage({
   params
 }) {
@@ -26,6 +26,4 @@ async function PaymentConfirmPage({
   return <PaymentConfirmClient initialData={res.data} />;
 }
 export {
-  PaymentConfirmPage as default,
-  dynamic
-};
+  PaymentConfirmPage as default};

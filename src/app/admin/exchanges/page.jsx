@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { getAllExchanges } from "../../../lib/db/exchanges";
 import { getAllBooks } from "../../../lib/db/books";
 import { RefreshCw } from "lucide-react";
-const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic";
 async function AdminExchangesPage() {
   const session = await getSession();
   if (!session || session.role !== "ADMIN") redirect("/login");
@@ -58,6 +58,4 @@ async function AdminExchangesPage() {
     </div>;
 }
 export {
-  AdminExchangesPage as default,
-  dynamic
-};
+  AdminExchangesPage as default};

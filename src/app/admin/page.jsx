@@ -6,7 +6,7 @@ import { getAllOrders } from "../../lib/db/orders";
 import { getAllExchanges } from "../../lib/db/exchanges";
 import { getAllDeliveries } from "../../lib/db/deliveries";
 import AdminDashboardView from "../../components/dashboard/AdminDashboardView";
-const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic";
 async function AdminDashboardPage() {
   const session = await getSession();
   if (!session || session.role !== "ADMIN") {
@@ -74,6 +74,4 @@ async function AdminDashboardPage() {
   />;
 }
 export {
-  AdminDashboardPage as default,
-  dynamic
-};
+  AdminDashboardPage as default};

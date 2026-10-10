@@ -4,7 +4,7 @@ import { getUserById } from "../../../lib/db/users";
 import { getBookById } from "../../../lib/db/books";
 import { redirect } from "next/navigation";
 import { Star, MessageSquare } from "lucide-react";
-const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic";
 async function ReviewsPage() {
   const session = await getSession();
   if (!session) redirect("/login");
@@ -90,6 +90,4 @@ async function ReviewsPage() {
     </div>;
 }
 export {
-  ReviewsPage as default,
-  dynamic
-};
+  ReviewsPage as default};

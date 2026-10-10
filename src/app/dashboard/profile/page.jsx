@@ -2,7 +2,7 @@ import { getSession } from "../../../lib/auth/session";
 import { getUserById, getProfileByUserId } from "../../../lib/db/users";
 import ProfileForm from "../../../components/ProfileForm";
 import { redirect } from "next/navigation";
-const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic";
 async function ProfilePage() {
   const session = await getSession();
   if (!session) redirect("/login");
@@ -16,6 +16,4 @@ async function ProfilePage() {
   return <ProfileForm initialUser={detailedUser} />;
 }
 export {
-  ProfilePage as default,
-  dynamic
-};
+  ProfilePage as default};

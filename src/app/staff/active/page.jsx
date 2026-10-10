@@ -5,7 +5,7 @@ import { getAllOrders } from "../../../lib/db/orders";
 import { getAllBooks } from "../../../lib/db/books";
 import { Truck, AlertCircle, MapPin } from "lucide-react";
 import Link from "next/link";
-const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic";
 async function StaffActiveDeliveryPage() {
   const session = await getSession();
   if (!session || session.role !== "DELIVERY_STAFF") redirect("/login");
@@ -81,6 +81,4 @@ async function StaffActiveDeliveryPage() {
     </div>;
 }
 export {
-  StaffActiveDeliveryPage as default,
-  dynamic
-};
+  StaffActiveDeliveryPage as default};

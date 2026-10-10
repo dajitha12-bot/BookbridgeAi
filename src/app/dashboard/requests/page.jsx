@@ -4,7 +4,7 @@ import { getAllBooks } from "../../../lib/db/books";
 import { getUserById } from "../../../lib/db/users";
 import RequestsClient from "../../../components/dashboard/RequestsClient";
 import { redirect } from "next/navigation";
-const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic";
 async function RequestsPage({
   searchParams
 }) {
@@ -31,6 +31,4 @@ async function RequestsPage({
   />;
 }
 export {
-  RequestsPage as default,
-  dynamic
-};
+  RequestsPage as default};

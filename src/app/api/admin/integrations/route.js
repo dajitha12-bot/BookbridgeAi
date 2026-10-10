@@ -3,7 +3,7 @@ import { getSession } from "../../../../lib/auth/session";
 import { db } from "../../../../lib/db/sqliteDb";
 import fs from "fs";
 import path from "path";
-const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic";
 async function GET() {
   const session = await getSession();
   if (!session || session.role !== "ADMIN") {
@@ -82,6 +82,4 @@ async function GET() {
   });
 }
 export {
-  GET,
-  dynamic
-};
+  GET};

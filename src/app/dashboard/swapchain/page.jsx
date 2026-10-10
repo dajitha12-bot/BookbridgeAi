@@ -4,7 +4,7 @@ import { getBookById } from "../../../lib/db/books";
 import { getUserById } from "../../../lib/db/users";
 import SwapChainClient from "./SwapChainClient";
 import { redirect } from "next/navigation";
-const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic";
 async function SwapChainPage() {
   const session = await getSession();
   if (!session) redirect("/login");
@@ -80,6 +80,4 @@ async function SwapChainPage() {
   />;
 }
 export {
-  SwapChainPage as default,
-  dynamic
-};
+  SwapChainPage as default};

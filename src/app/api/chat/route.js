@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSession } from "../../../lib/auth/session";
 import { getOrCreateConversation, getConversationMessages, sendMessage, getUserConversations } from "../../../lib/db/chat";
-const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic";
 async function GET(request) {
   const session = await getSession();
   if (!session) {
@@ -41,6 +41,4 @@ async function POST(request) {
 }
 export {
   GET,
-  POST,
-  dynamic
-};
+  POST};

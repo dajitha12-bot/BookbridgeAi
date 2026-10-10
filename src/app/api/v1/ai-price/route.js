@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { authenticateApiRequest } from "../../../../lib/auth/apiAuth";
 import { predictFairPrice } from "../../../../lib/ai/pricePrediction";
-const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic";
 async function POST(req) {
   const auth = await authenticateApiRequest(req);
   if (!auth.authenticated) {
@@ -69,6 +69,4 @@ async function GET(req) {
 }
 export {
   GET,
-  POST,
-  dynamic
-};
+  POST};

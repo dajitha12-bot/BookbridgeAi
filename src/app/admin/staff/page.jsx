@@ -2,7 +2,7 @@ import { getSession } from "../../../lib/auth/session";
 import { redirect } from "next/navigation";
 import { getAllDeliveryStaff } from "../../../lib/db/deliveries";
 import { Truck } from "lucide-react";
-const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic";
 async function AdminDeliveryStaffPage() {
   const session = await getSession();
   if (!session || session.role !== "ADMIN") redirect("/login");
@@ -54,6 +54,4 @@ async function AdminDeliveryStaffPage() {
     </div>;
 }
 export {
-  AdminDeliveryStaffPage as default,
-  dynamic
-};
+  AdminDeliveryStaffPage as default};

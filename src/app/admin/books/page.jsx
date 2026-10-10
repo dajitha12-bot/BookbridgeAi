@@ -2,7 +2,7 @@ import { getSession } from "../../../lib/auth/session";
 import { redirect } from "next/navigation";
 import { getAllBooks } from "../../../lib/db/books";
 import { BookOpen } from "lucide-react";
-const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic";
 async function AdminBooksPage() {
   const session = await getSession();
   if (!session || session.role !== "ADMIN") redirect("/login");
@@ -62,6 +62,4 @@ async function AdminBooksPage() {
     </div>;
 }
 export {
-  AdminBooksPage as default,
-  dynamic
-};
+  AdminBooksPage as default};

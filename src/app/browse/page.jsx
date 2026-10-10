@@ -3,7 +3,7 @@ import { getProfileByUserId } from "../../lib/db/users";
 import { getRequestsByUser } from "../../lib/db/bookRequests";
 import BrowseBooksClient from "../../components/BrowseBooksClient";
 import Link from "next/link";
-const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic";
 async function BrowsePage() {
   const session = await getSession();
   let coords = null;
@@ -79,6 +79,4 @@ async function BrowsePage() {
     </div>;
 }
 export {
-  BrowsePage as default,
-  dynamic
-};
+  BrowsePage as default};

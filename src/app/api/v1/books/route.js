@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { authenticateApiRequest } from "../../../../lib/auth/apiAuth";
 import { db } from "../../../../lib/db/sqliteDb";
-const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic";
 async function GET(req) {
   const auth = await authenticateApiRequest(req);
   if (!auth.authenticated) {
@@ -37,6 +37,4 @@ async function GET(req) {
   });
 }
 export {
-  GET,
-  dynamic
-};
+  GET};
