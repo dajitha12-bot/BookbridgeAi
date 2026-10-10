@@ -1,0 +1,37 @@
+import { getSession } from "../../lib/auth/session";
+import { getMeAction } from "../../actions/authActions";
+import DashboardShell from "../../components/DashboardShell";
+import { AuthProvider } from "../../components/AuthProvider";
+const dynamic = "force-dynamic";
+async function DashboardLayout({
+  children
+}) {
+  const session = await getSession();
+  const user = await getMeAction();
+  const activeUser = user || {
+    id: session?.id || "usr-user1",
+    name: session?.name || "Ajitha",
+    email: session?.email || "ajitha@gmail.com",
+    role: session?.role || "USER",
+    profile: {
+      avatarUrl: null
+    }
+  };
+  return <AuthProvider>
+      <DashboardShell
+    sessionUser={{
+      id: activeUser.id,
+      name: activeUser.name,
+      email: activeUser.email,
+      role: activeUser.role,
+      avatarUrl: activeUser.profile?.avatarUrl
+    }}
+  >
+        {children}
+      </DashboardShell>
+    </AuthProvider>;
+}
+export {
+  DashboardLayout as default,
+  dynamic
+};
