@@ -492,11 +492,38 @@ function AddBookClient() {
       try {
         const res = await lookupIsbnAction(isbn);
         if (res.success && res.metadata) {
-          if (res.metadata.title) setTitle(res.metadata.title);
-          if (res.metadata.author) setAuthor(res.metadata.author);
-          if (res.metadata.publishYear) setPublicationYear(res.metadata.publishYear);
-          if (res.metadata.category) setCategory(res.metadata.category);
-          setIsbnSource(res.metadata.source);
+          const meta = res.metadata;
+          if (meta.title) setTitle(meta.title);
+          if (meta.author) setAuthor(meta.author);
+          if (meta.publishYear) setPublicationYear(meta.publishYear);
+          if (meta.category) setCategory(meta.category);
+          if (meta.subject) setSubject(meta.subject);
+          if (meta.originalPrice && (!originalPrice || originalPrice === 0)) {
+            setOriginalPrice(meta.originalPrice);
+            if (!expectedPrice) {
+              setExpectedPrice(Math.round(meta.originalPrice * 0.5).toString());
+            }
+          }
+          if (meta.coverUrl && (!imageUrl || bookImages.length === 0)) {
+            setImageUrl(meta.coverUrl);
+            setBookImages([
+              {
+                id: `img_cover_${Date.now()}`,
+                imageUrl: meta.coverUrl,
+                imageType: "Cover Page",
+                isPrimary: true,
+                displayOrder: 1
+              }
+            ]);
+          }
+          setIsbnSource(meta.source);
+          setChatMessages((prev) => [
+            ...prev,
+            {
+              sender: "ai",
+              text: `✨ Identified book from Google: "${meta.title}" by ${meta.author}! Autofilled subject, publisher, and suggested resale price: ₹${Math.round((meta.originalPrice || 1200) * 0.5)}.`
+            }
+          ]);
         } else {
           alert(res.error || "No metadata found. Enter details manually.");
           setIsbnSource("BookBridge SQLite Market Data");
