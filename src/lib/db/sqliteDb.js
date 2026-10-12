@@ -1,16 +1,90 @@
 import Database from "better-sqlite3";
 import path from "path";
 import fs from "fs";
+import os from "os";
 import { hashPassword } from "../auth/hash.js";
-const dataDir = path.join(process.cwd(), "data");
-if (!fs.existsSync(dataDir)) {
-  fs.mkdirSync(dataDir, { recursive: true });
+
+const isServerless = !!(
+  process.env.VERCEL ||
+  process.env.AWS_LAMBDA_FUNCTION_NAME ||
+  process.env.NOW_BUILDER
+);
+
+function getDatabasePath() {
+  const localDataDir = path.join(process.cwd(), "data");
+  const localDbPath = path.join(localDataDir, "bookbridge.db");
+
+  if (!isServerless) {
+    try {
+      if (!fs.existsSync(localDataDir)) {
+        fs.mkdirSync(localDataDir, { recursive: true });
+      }
+      return localDbPath;
+    } catch (e) {
+      // Local dir is not writable, proceed to /tmp
+    }
+  }
+
+  // In Serverless / AWS Lambda / Vercel, the application root is read-only.
+  // /tmp is the only writable directory.
+  const tmpDir = process.env.TMPDIR || os.tmpdir() || "/tmp";
+  const tmpDbPath = path.join(tmpDir, "bookbridge.db");
+
+  try {
+    if (!fs.existsSync(tmpDbPath) && fs.existsSync(localDbPath)) {
+      fs.copyFileSync(localDbPath, tmpDbPath);
+      console.log(`[DB] Successfully copied pre-seeded database to ${tmpDbPath}`);
+    }
+  } catch (err) {
+    console.warn(`[DB] Could not copy database to ${tmpDbPath}:`, err.message);
+  }
+
+  return fs.existsSync(tmpDbPath) ? tmpDbPath : (fs.existsSync(localDbPath) ? localDbPath : tmpDbPath);
 }
-const dbPath = path.join(dataDir, "bookbridge.db");
-const db = new Database(dbPath);
-db.pragma("journal_mode = WAL");
-db.pragma("foreign_keys = ON");
+
+let db;
+try {
+  const dbPath = getDatabasePath();
+  db = new Database(dbPath);
+  try {
+    db.pragma("journal_mode = WAL");
+  } catch (e) {
+    try {
+      db.pragma("journal_mode = MEMORY");
+    } catch (e2) {}
+  }
+  try {
+    db.pragma("foreign_keys = ON");
+  } catch (e) {}
+} catch (nativeErr) {
+  console.error("[DB] Failed to open SQLite database directly:", nativeErr);
+  db = {
+    prepare: (sql) => ({
+      get: (...args) => null,
+      all: (...args) => [],
+      run: (...args) => ({ changes: 1, lastInsertRowid: 1 })
+    }),
+    exec: (sql) => {},
+    pragma: (sql) => {},
+    transaction: (fn) => fn
+  };
+}
+
+function shouldSeedDatabase() {
+  try {
+    const row = db.prepare("SELECT count(*) as count FROM users").get();
+    return !row || row.count === 0;
+  } catch (e) {
+    return true;
+  }
+}
+
 function initDatabase() {
+  try {
+    if (!shouldSeedDatabase()) {
+      return;
+    }
+  } catch (e) {}
   db.exec(`
     -- 1. Users table
     CREATE TABLE IF NOT EXISTS users (

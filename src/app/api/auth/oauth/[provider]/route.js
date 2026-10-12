@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getUserByEmail, createUser } from "../../../../../lib/db/users";
 import { signJwt } from "../../../../../lib/auth/jwt";
-import { createSession } from "../../../../../lib/auth/session";
+import { createSession, encrypt } from "../../../../../lib/auth/session";
 import { hashPassword } from "../../../../../lib/auth/hash";
 export const dynamic = "force-dynamic";
 async function GET(request, { params }) {
@@ -45,9 +45,22 @@ async function GET(request, { params }) {
     role: user.role,
     provider: targetProvider
   });
+  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1e3).toISOString();
+  const token = encrypt(JSON.stringify({ id: user.id, name: user.name, email: user.email, role: user.role, expiresAt }));
+
   const redirectUrl = new URL("/dashboard", request.url);
   const response = NextResponse.redirect(redirectUrl);
   response.cookies.set("jwt_token", jwt, {
+    path: "/",
+    sameSite: "lax",
+    maxAge: 7 * 24 * 3600
+  });
+  response.cookies.set("session_token", token, {
+    path: "/",
+    sameSite: "lax",
+    maxAge: 7 * 24 * 3600
+  });
+  response.cookies.set("user_role", user.role, {
     path: "/",
     sameSite: "lax",
     maxAge: 7 * 24 * 3600
@@ -93,6 +106,9 @@ async function POST(request, { params }) {
     email: user.email,
     role: user.role
   });
+  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1e3).toISOString();
+  const token = encrypt(JSON.stringify({ id: user.id, name: user.name, email: user.email, role: user.role, expiresAt }));
+
   const response = NextResponse.json({
     success: true,
     provider: targetProvider,
@@ -101,6 +117,16 @@ async function POST(request, { params }) {
     user: { id: user.id, email: user.email, name: user.name, role: user.role }
   });
   response.cookies.set("jwt_token", jwt, {
+    path: "/",
+    sameSite: "lax",
+    maxAge: 7 * 24 * 3600
+  });
+  response.cookies.set("session_token", token, {
+    path: "/",
+    sameSite: "lax",
+    maxAge: 7 * 24 * 3600
+  });
+  response.cookies.set("user_role", user.role, {
     path: "/",
     sameSite: "lax",
     maxAge: 7 * 24 * 3600

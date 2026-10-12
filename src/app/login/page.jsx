@@ -22,21 +22,38 @@ function LoginFormContent() {
       formData.set("password", password);
       formData.set("role", targetRole === "staff" ? "DELIVERY_STAFF" : targetRole.toUpperCase());
       const res = await loginAction(null, formData);
-      if (res && res.token) {
-        document.cookie = `session_token=${res.token}; path=/; max-age=604800; SameSite=Lax;`;
-        document.cookie = `user_role=${res.role}; path=/; max-age=604800; SameSite=Lax;`;
+      if (res && res.success) {
+        if (res.token) {
+          document.cookie = `session_token=${res.token}; path=/; max-age=604800; SameSite=Lax;`;
+        }
+        if (res.role) {
+          document.cookie = `user_role=${res.role}; path=/; max-age=604800; SameSite=Lax;`;
+        }
+        if (res.jwt) {
+          document.cookie = `jwt_token=${res.jwt}; path=/; max-age=604800; SameSite=Lax;`;
+        }
+        try {
+          localStorage.setItem("user_role", res.role);
+          localStorage.setItem("user_email", email);
+        } catch (e) {}
+        const destination = res.redirectUrl || targetUrl;
+        window.location.replace(destination);
+      } else {
+        setError(res?.error || "Login failed. Please check credentials.");
+        setIsPending(false);
       }
     } catch (err) {
       console.error("Login action error:", err);
-    } finally {
-      setTimeout(() => {
-        window.location.replace(targetUrl);
-      }, 100);
+      setError("An unexpected error occurred during login. Please try again.");
+      setIsPending(false);
     }
   };
-  const handleQuickDemoLogin = (demoEmail) => {
+  const handleQuickDemoLogin = (demoEmail, demoRole) => {
     setEmail(demoEmail);
     setPassword("password123");
+    if (demoRole && demoRole !== targetRole) {
+      window.location.href = `/login?role=${demoRole}`;
+    }
   };
   const getRoleHeader = () => {
     if (targetRole === "admin") return { title: "Admin Workspace", icon: Shield, color: "text-blue-500 bg-blue-50" };
@@ -78,7 +95,87 @@ function LoginFormContent() {
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+        {/* Role Switcher Tabs */}
+        <div className="flex bg-slate-100 p-1 rounded-xl mb-4 text-xs font-semibold">
+          <Link
+            href="/login?role=user"
+            className={`flex-1 py-2 text-center rounded-lg transition-all ${
+              targetRole === "user" ? "bg-white text-blue-600 shadow-xs font-bold" : "text-slate-500 hover:text-slate-800"
+            }`}
+          >
+            Reader
+          </Link>
+          <Link
+            href="/login?role=staff"
+            className={`flex-1 py-2 text-center rounded-lg transition-all ${
+              targetRole === "staff" ? "bg-white text-emerald-600 shadow-xs font-bold" : "text-slate-500 hover:text-slate-800"
+            }`}
+          >
+            Delivery Staff
+          </Link>
+          <Link
+            href="/login?role=admin"
+            className={`flex-1 py-2 text-center rounded-lg transition-all ${
+              targetRole === "admin" ? "bg-white text-blue-600 shadow-xs font-bold" : "text-slate-500 hover:text-slate-800"
+            }`}
+          >
+            Admin
+          </Link>
+        </div>
+
         <div className="bg-white py-8 px-4 border border-slate-100 shadow-md sm:rounded-xl sm:px-10 space-y-6">
+          {/* Quick Demo Fill Pills */}
+          <div className="bg-slate-50 border border-slate-200/60 rounded-lg p-2.5 space-y-1.5">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">1-Click Demo Fill:</div>
+            <div className="flex flex-wrap gap-1.5">
+              {targetRole === "admin" && (
+                <button
+                  type="button"
+                  onClick={() => handleQuickDemoLogin("admin@bookbridge.com", "admin")}
+                  className="text-[11px] font-semibold bg-blue-100 text-blue-700 hover:bg-blue-200 px-2.5 py-1 rounded-md transition-colors"
+                >
+                  Admin (admin@bookbridge.com)
+                </button>
+              )}
+              {targetRole === "staff" && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => handleQuickDemoLogin("dhinesh@delivery.com", "staff")}
+                    className="text-[11px] font-semibold bg-emerald-100 text-emerald-700 hover:bg-emerald-200 px-2 py-1 rounded-md transition-colors"
+                  >
+                    Dhinesh (dhinesh@delivery.com)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleQuickDemoLogin("staff1@example.com", "staff")}
+                    className="text-[11px] font-semibold bg-emerald-100 text-emerald-700 hover:bg-emerald-200 px-2 py-1 rounded-md transition-colors"
+                  >
+                    Suresh (staff1@example.com)
+                  </button>
+                </>
+              )}
+              {targetRole === "user" && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => handleQuickDemoLogin("ajitha@gmail.com", "user")}
+                    className="text-[11px] font-semibold bg-blue-100 text-blue-700 hover:bg-blue-200 px-2.5 py-1 rounded-md transition-colors"
+                  >
+                    Ajitha (ajitha@gmail.com)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleQuickDemoLogin("user1@example.com", "user")}
+                    className="text-[11px] font-semibold bg-slate-200 text-slate-700 hover:bg-slate-300 px-2.5 py-1 rounded-md transition-colors"
+                  >
+                    User 1 (user1@example.com)
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+
           {error && <div className="bg-rose-50 border border-rose-100 p-3 rounded-lg flex items-start space-x-2.5 text-rose-600 text-xs font-semibold animate-shake">
               <AlertCircle className="w-4 h-4 text-rose-500 flex-shrink-0 mt-0.5" />
               <span>{error}</span>
