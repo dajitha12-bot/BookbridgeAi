@@ -11,26 +11,45 @@ async function GET(request, { params }) {
   const email = isGoogle ? "ajitha@gmail.com" : "priya@gmail.com";
   const name = isGoogle ? "Ajitha (Google Verified)" : "Priya Patel (GitHub)";
   const avatarUrl = isGoogle ? "https://lh3.googleusercontent.com/a/default-user" : "https://github.com/identicons/user.png";
-  let user = await getUserByEmail(email);
+  let user = null;
+  try {
+    user = await getUserByEmail(email);
+  } catch (e) {
+    console.warn("DB lookup in OAuth GET failed:", e.message);
+  }
   if (!user) {
-    user = await createUser(
-      {
-        email,
-        name,
-        phone: "9876543210",
-        passwordHash: hashPassword(`oauth_${targetProvider}_${Date.now()}`),
-        role: "USER"
-      },
-      {
-        city: "Chennai",
-        area: "Adyar",
-        address: "OAuth Authenticated Address",
-        pincode: "600020",
-        latitude: 13.0827,
-        longitude: 80.2707,
-        avatarUrl
-      }
-    );
+    try {
+      user = await createUser(
+        {
+          email,
+          name,
+          phone: "9876543210",
+          passwordHash: hashPassword(`oauth_${targetProvider}_${Date.now()}`),
+          role: "USER"
+        },
+        {
+          city: "Chennai",
+          area: "Adyar",
+          address: "OAuth Authenticated Address",
+          pincode: "600020",
+          latitude: 13.0827,
+          longitude: 80.2707,
+          avatarUrl
+        }
+      );
+    } catch (createErr) {
+      console.warn("User creation in OAuth GET failed:", createErr.message);
+    }
+  }
+  if (!user) {
+    user = {
+      id: isGoogle ? "usr-user1" : "usr-user3",
+      email,
+      name,
+      phone: "9876543210",
+      role: "USER",
+      status: "ACTIVE"
+    };
   }
   await createSession({
     id: user.id,

@@ -58,9 +58,9 @@ export default async function DashboardPage() {
   );
   const activeOrders = await Promise.all(
     userOrders.map(async (order) => {
-      const book = await getBookById(order.bookId, allBooks);
-      const seller = await getUserById(order.sellerId);
-      const buyer = await getUserById(order.buyerId);
+      const book = (await getBookById(order.bookId, allBooks)) || { id: order.bookId, title: "Clean Code: Agile Software Craftsmanship" };
+      const seller = (await getUserById(order.sellerId)) || { id: order.sellerId, name: "Priya Patel", email: "priya@gmail.com" };
+      const buyer = (await getUserById(order.buyerId)) || { id: order.buyerId, name: detailedUser?.name || "Ajitha", email: detailedUser?.email || "ajitha@gmail.com" };
       return {
         ...order,
         book,

@@ -48,7 +48,7 @@ function UserDashboardView({
           <BookOpen className="w-64 h-64" />
         </div>
         <div className="relative z-10 space-y-2">
-          <h1 className="text-2xl sm:text-3xl font-extrabold">Welcome back, {user.name}!</h1>
+          <h1 className="text-2xl sm:text-3xl font-extrabold">Welcome back, {user?.name || "Reader"}!</h1>
           <p className="text-sky-100 max-w-xl text-sm sm:text-base">
             Give books a second life. Buy, sell, exchange and coordinate home delivery or offline pickup directly in your neighborhood.
           </p>
@@ -60,11 +60,11 @@ function UserDashboardView({
   }
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         {[
-    { label: "Books Listed", value: stats.listed, icon: BookOpen, color: "text-sky-600 bg-sky-50" },
-    { label: "Books Sold", value: stats.sold, icon: DollarSign, color: "text-emerald-600 bg-emerald-50" },
-    { label: "My Orders", value: stats.orders, icon: ShoppingBag, color: "text-indigo-600 bg-indigo-50" },
-    { label: "Exchanges", value: stats.exchanges, icon: RefreshCw, color: "text-amber-600 bg-amber-50" },
-    { label: "Wishlist", value: stats.wishlist, icon: Heart, color: "text-rose-600 bg-rose-50" }
+    { label: "Books Listed", value: stats?.listed ?? 0, icon: BookOpen, color: "text-sky-600 bg-sky-50" },
+    { label: "Books Sold", value: stats?.sold ?? 0, icon: DollarSign, color: "text-emerald-600 bg-emerald-50" },
+    { label: "My Orders", value: stats?.orders ?? 0, icon: ShoppingBag, color: "text-indigo-600 bg-indigo-50" },
+    { label: "Exchanges", value: stats?.exchanges ?? 0, icon: RefreshCw, color: "text-amber-600 bg-amber-50" },
+    { label: "Wishlist", value: stats?.wishlist ?? 0, icon: Heart, color: "text-rose-600 bg-rose-50" }
   ].map((stat, i) => {
     const Icon = stat.icon;
     return <div key={i} className="bg-white p-5 rounded-xl border border-slate-100 shadow-xs flex items-center space-x-4">
@@ -121,18 +121,20 @@ function UserDashboardView({
       {
     /* Active Orders Widget */
   }
-      {activeOrders.length > 0 && <div className="bg-white p-6 rounded-xl border border-slate-100 shadow-xs space-y-4">
+      {activeOrders && activeOrders.length > 0 && <div className="bg-white p-6 rounded-xl border border-slate-100 shadow-xs space-y-4">
           <h2 className="text-lg font-bold text-slate-800">Active Orders & Deliveries</h2>
           <div className="divide-y divide-slate-100">
             {activeOrders.map((order) => <div key={order.id} className="py-4 first:pt-0 last:pb-0 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div className="flex items-center space-x-3">
                   <div className="w-10 h-10 bg-sky-50 rounded-lg flex items-center justify-center font-bold text-sky-600">
-                    {order.book.title.charAt(0)}
+                    {order.book?.title ? order.book.title.charAt(0) : "B"}
                   </div>
                   <div>
-                    <h3 className="font-semibold text-slate-800 text-sm">{order.book.title}</h3>
+                    <h3 className="font-semibold text-slate-800 text-sm">{order.book?.title || "Academic Book Order"}</h3>
                     <p className="text-xs text-slate-500">
-                      {order.buyerId === user.id ? `Buying from ${order.seller.name}` : `Selling to ${order.buyer.name}`}
+                      {order.buyerId === user?.id 
+                        ? `Buying from ${order.seller?.name || "BookBridge Seller"}` 
+                        : `Selling to ${order.buyer?.name || "Verified Reader"}`}
                     </p>
                   </div>
                 </div>
